@@ -31,3 +31,8 @@ size_t c_counter::get_speed_in_Gbps() {
 	size_t seconds = std::chrono::duration_cast<std::chrono::seconds>(now - m_start_point).count();
 	return m_data_in_bytes * 8 / 1024 / 1024 / 1024 / seconds;
 }
+
+void c_counter::reset() {
+	m_data_in_bytes = 0;
+	m_start_point = std::chrono::steady_clock::now();
+}

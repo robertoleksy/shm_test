@@ -29,11 +29,13 @@ int main() {
 		i++;
 		auto now = std::chrono::steady_clock::now();
 		if (std::chrono::duration_cast<std::chrono::seconds>(now - last_dbg_time).count() > 3) {
+			std:: cout << "\n\n\n";
 			std::cout << "speed in GBps " << counter.get_speed_in_GBps() << std::endl;
 			std::cout << "speed in MBps " << counter.get_speed_in_MBps() << std::endl;
 			std::cout << "speed in Gbps " << counter.get_speed_in_Gbps() << std::endl;
 			std::cout << "speed in Mbps " << counter.get_speed_in_Mbps() << std::endl;
 			last_dbg_time = std::chrono::steady_clock::now();
+			counter.reset();
 		}
 	}
 }

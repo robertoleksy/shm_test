@@ -12,6 +12,7 @@ class c_counter
 		size_t get_speed_in_GBps();
 		size_t get_speed_in_Mbps();
 		size_t get_speed_in_Gbps();
+		void reset();
 	private:
 		size_t m_data_in_bytes = 0;
 		std::chrono::steady_clock::time_point m_start_point;
