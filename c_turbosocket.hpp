@@ -5,7 +5,6 @@
 #include <boost/interprocess/sync/interprocess_condition.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/interprocess/sync/scoped_lock.hpp>
-#include <boost/interprocess/sync/interprocess_semaphore.hpp>
 #include <tuple>
 
 class c_turbosocket final {
@@ -31,7 +30,7 @@ class c_turbosocket final {
 		const std::string m_queue_name = "tunserver_turbosocket_queue";
 		static constexpr size_t m_max_queue_massage_size = 20;
 		// header + packet + mutex
-		const size_t m_shm_size = 65000 + sizeof(header);
+		const size_t m_shm_size = 65 * 1024 + sizeof(header);
 		boost::interprocess::mapped_region m_shm_region;
 		void * m_shm_data_buff; // ptr to shared memory for free use
 		boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> m_lock;
