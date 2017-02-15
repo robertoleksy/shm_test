@@ -10,3 +10,5 @@ add_executable(msg_queue_client msg_queue_client.cpp c_counter.cpp)
 add_executable(msg_queue_server msg_queue_server.cpp c_counter.cpp)
 target_link_libraries(msg_queue_client pthread rt)
 target_link_libraries(msg_queue_server pthread rt)
+
+add_library(preload SHARED preload.cpp c_sockfd_manager.cpp)
