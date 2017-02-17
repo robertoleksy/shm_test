@@ -18,3 +18,14 @@ int c_sockfd_manager::add_tcp_descriptor(int domain, int type, int protocol) {
 		m_tcp_descriptors.emplace(std::make_pair(descriptor, c_turbosocket()));
 	return descriptor;
 }
+
+int c_sockfd_manager::close(int fd) {
+	int ret = close(fd);
+	if (ret == -1) return ret; // close error
+	if (m_tcp_descriptors.find(fd) != m_tcp_descriptors.end()) {
+		m_tcp_descriptors.erase(fd);
+	} else if (m_udp_descriptors.find(fd) != m_udp_descriptors.end()) {
+		m_udp_descriptors.erase(fd);
+	}
+	return ret;
+}
