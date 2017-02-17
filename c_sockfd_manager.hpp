@@ -6,12 +6,13 @@
 
 class c_sockfd_manager {
 	public:
-		int add_udp_descriptor();
-		int add_tcp_descriptor();
+		int add_udp_descriptor(int domain, int type, int protocol);
+		int add_tcp_descriptor(int domain, int type, int protocol);
 	private:
 		int get_first_free_descritpor(const std::map<int, c_turbosocket> &map);
 		std::map<int, c_turbosocket> m_udp_descriptors;
 		std::map<int, c_turbosocket> m_tcp_descriptors;
+
 };
 
 #endif // C_SOCKFD_MANAGER_HPP
