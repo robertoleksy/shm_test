@@ -29,3 +29,12 @@ int c_sockfd_manager::close(int fd) {
 	}
 	return ret;
 }
+
+c_turbosocket &c_sockfd_manager::get_turbosocket_for_descriptor(int fd) {
+	if (m_tcp_descriptors.find(fd) != m_tcp_descriptors.end()) {
+		return m_tcp_descriptors.at(fd);
+	} else if (m_udp_descriptors.find(fd) != m_udp_descriptors.end()) {
+		return m_udp_descriptors.at(fd);
+	}
+	throw std::invalid_argument("not found descriptor");
+}

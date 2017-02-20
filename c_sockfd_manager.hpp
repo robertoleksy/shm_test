@@ -9,8 +9,8 @@ class c_sockfd_manager {
 		int add_udp_descriptor(int domain, int type, int protocol);
 		int add_tcp_descriptor(int domain, int type, int protocol);
 		int close(int fd);
+		c_turbosocket &get_turbosocket_for_descriptor(int fd);
 	private:
-		int get_first_free_descritpor(const std::map<int, c_turbosocket> &map);
 		std::map<int, c_turbosocket> m_udp_descriptors;
 		std::map<int, c_turbosocket> m_tcp_descriptors;
 
