@@ -42,5 +42,5 @@ ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct 
 	if (len > m_buf_size) return -1;
 	std::memcpy(m_buf, buf, len);
 	turbosock_ref.send();
-	return 0;
+	return len;
 }

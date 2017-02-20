@@ -4,7 +4,7 @@
 
 int c_sockfd_manager::add_udp_descriptor(int domain, int type, int protocol) {
 	std::cout << "add udp socket" << std::endl;
-	//if (domain != AF_INET6) throw std::invalid_argument("domain is not AF_INET6");
+	// XXX if (domain != AF_INET6) throw std::invalid_argument("domain is not AF_INET6");
 	if (type != SOCK_DGRAM) throw std::invalid_argument("type is not SOCK_DGRAM");
 	int(*original_socket)(int, int, int);
 	original_socket = reinterpret_cast<decltype (original_socket)>(dlsym(RTLD_NEXT, "socket"));
@@ -19,9 +19,11 @@ int c_sockfd_manager::add_udp_descriptor(int domain, int type, int protocol) {
 
 int c_sockfd_manager::add_tcp_descriptor(int domain, int type, int protocol) {
 	std::cout << "add tcp socket" << std::endl;
-	//if (domain != AF_INET6) throw std::invalid_argument("domain is not AF_INET6");
+	// XXX if (domain != AF_INET6) throw std::invalid_argument("domain is not AF_INET6");
 	if (type != SOCK_STREAM) throw std::invalid_argument("type is not SOCK_STREAM");
-	int descriptor = ::socket(domain, type, protocol);
+	int(*original_socket)(int, int, int);
+	original_socket = reinterpret_cast<decltype (original_socket)>(dlsym(RTLD_NEXT, "socket"));
+	int descriptor = original_socket(domain, type, protocol);
 	if (descriptor != -1) {
 		m_tcp_descriptors.emplace(std::make_pair(descriptor, c_turbosocket()));
 		m_tcp_descriptors.at(descriptor).connect_as_client();
