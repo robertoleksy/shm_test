@@ -30,7 +30,9 @@ int c_sockfd_manager::add_tcp_descriptor(int domain, int type, int protocol) {
 }
 
 int c_sockfd_manager::close(int fd) {
-	int ret = ::close(fd);
+	int(*original_close)(int);
+	original_close = reinterpret_cast<decltype(original_close)>(dlsym(RTLD_NEXT, "close"));
+	int ret = original_close(fd);
 	if (ret == -1) return ret; // close error
 	if (m_tcp_descriptors.find(fd) != m_tcp_descriptors.end()) {
 		m_tcp_descriptors.erase(fd);
