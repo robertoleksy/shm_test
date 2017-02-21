@@ -1,9 +1,18 @@
 #include "c_turbosocket.hpp"
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/interprocess/ipc/message_queue.hpp>
 #include <boost/interprocess/shared_memory_object.hpp>
 #include <thread>
 
 using namespace boost::interprocess;
+
+c_turbosocket::c_turbosocket(c_turbosocket &&other) noexcept {
+	if (this == &other) return;
+	this->m_shm_region = std::move(other.m_shm_region);
+	this->m_shm_data_buff = other.m_shm_data_buff;
+	other.m_shm_data_buff = nullptr;
+	this->m_lock = std::move(other.m_lock);
+}
 
 std::tuple<void *, size_t> c_turbosocket::get_buffer_for_write() {
 //	std::cout << "full lock" << std::endl;
@@ -92,4 +101,29 @@ void c_turbosocket::wait_for_connection() {
 	std::cout << "created shm address " << addr << std::endl;
 	std::cout << "shm data addr " << m_shm_data_buff << std::endl;
 	std::cout << "shm size " << m_shm_region.get_size() << std::endl;
+}
+
+bool c_turbosocket::timed_wait_for_connection() { // TODO code duplication
+	message_queue msg_queue(open_or_create, m_queue_name.c_str(), 20, m_max_queue_massage_size);
+	std::array<char, m_max_queue_massage_size> shm_name;
+	size_t recv_size = 0;
+	unsigned int priority = 0;
+	//msg_queue.receive(shm_name.data(), shm_name.size(), recv_size, priority); // receive shm name
+	boost::posix_time::ptime timeout_point = boost::posix_time::second_clock::universal_time() + boost::posix_time::seconds(1); // TODO configure this
+	bool ret = msg_queue.timed_receive(shm_name.data(), shm_name.size(), recv_size, priority, timeout_point);
+	if (!ret) return false;
+	std::cout << "receive shm name with size " << recv_size << std::endl;
+	for(auto &c : shm_name)
+		std::cout << c;
+	std::cout << std::endl;
+	shared_memory_object shm(open_only, shm_name.data(), read_write);
+	m_shm_region = mapped_region(shm, read_write);
+	void * addr = m_shm_region.get_address();
+	header * const header_ptr = static_cast<header *>(addr);
+	m_shm_data_buff = static_cast<char *>(addr) + sizeof(header);
+	m_lock = scoped_lock<interprocess_mutex>(header_ptr->mutex, defer_lock_type());
+	std::cout << "created shm address " << addr << std::endl;
+	std::cout << "shm data addr " << m_shm_data_buff << std::endl;
+	std::cout << "shm size " << m_shm_region.get_size() << std::endl;
+	return true;
 }

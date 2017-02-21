@@ -9,6 +9,9 @@
 
 class c_turbosocket final {
 	public:
+		c_turbosocket() = default;
+		c_turbosocket(c_turbosocket && other) noexcept;
+		c_turbosocket(const c_turbosocket &) = delete;
 		std::tuple<void *, size_t> get_buffer_for_write(); // block until buffer ready
 		std::tuple<void *, size_t> get_buffer_for_read(); // block until buffer ready
 
@@ -16,6 +19,7 @@ class c_turbosocket final {
 		void received(); //< receive data writed to buffer get by get_buffer
 		void connect_as_client();
 		void wait_for_connection(); // block function
+		bool timed_wait_for_connection(); ///< wait with timeout, return true if connected
 	private:
 		struct header {
 			boost::interprocess::interprocess_mutex mutex;
