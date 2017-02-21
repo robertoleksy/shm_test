@@ -28,6 +28,10 @@ int close(int fd) {
 	return sockfd_manager.close(fd);
 }
 
+int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
+	return 0;
+}
+
 ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen) {
 
 	return 0;

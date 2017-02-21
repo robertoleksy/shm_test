@@ -20,6 +20,7 @@ class c_turbosocket final {
 		void connect_as_client();
 		void wait_for_connection(); // block function
 		bool timed_wait_for_connection(); ///< wait with timeout, return true if connected
+		uint64_t id() const;
 	private:
 		struct header {
 			boost::interprocess::interprocess_mutex mutex;
@@ -29,7 +30,11 @@ class c_turbosocket final {
 			boost::interprocess::interprocess_condition cond_empty;
 			//Is there any message
 			bool message_in = false;
+			// socket unique ID
+			uint64_t id;
 		};
+
+		uint64_t get_uid() const;
 
 		const std::string m_queue_name = "tunserver_turbosocket_queue";
 		static constexpr size_t m_max_queue_massage_size = 20;
@@ -38,7 +43,7 @@ class c_turbosocket final {
 		boost::interprocess::mapped_region m_shm_region;
 		void * m_shm_data_buff; // ptr to shared memory for free use
 		boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> m_lock;
-
+		uint64_t m_id = 0;
 };
 
 #endif // C_TURBOSOCKET_HPP

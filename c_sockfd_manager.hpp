@@ -2,6 +2,7 @@
 #define C_SOCKFD_MANAGER_HPP
 
 #include "c_turbosocket.hpp"
+#include <boost/interprocess/ipc/message_queue.hpp>
 #include <map>
 
 class c_sockfd_manager {
@@ -13,6 +14,7 @@ class c_sockfd_manager {
 	private:
 		std::map<int, c_turbosocket> m_udp_descriptors;
 		std::map<int, c_turbosocket> m_tcp_descriptors;
+//		boost::interprocess::message_queue m_
 
 };
 
