@@ -53,6 +53,35 @@ c_turbosocket &c_sockfd_manager::get_turbosocket_for_descriptor(int fd) {
 	throw std::invalid_argument("not found descriptor " + std::to_string(fd));
 }
 
+int c_sockfd_manager::bind(int sockfd, const sockaddr *addr, socklen_t addrlen) {
+	int(*original_bind)(int, const struct sockaddr *, socklen_t);
+	original_bind = reinterpret_cast<decltype(original_bind)>(dlsym(RTLD_NEXT, "bind"));
+
+	std::cout << "original bind" << std::endl;
+	int ret = original_bind(sockfd, addr, addrlen);
+	if (ret == -1) return ret;
+
+	auto it_tcp = m_tcp_descriptors.find(sockfd);
+	auto it_udp = m_udp_descriptors.find(sockfd);
+	if (it_tcp != m_tcp_descriptors.end()) {
+
+	} else if (it_udp != m_udp_descriptors.end()) {
+
+	}
+	return ret;
+}
+
+bind_data c_sockfd_manager::generate_bind_data(uint64_t turbosocket_id, const sockaddr_in6 *addr) {
+	bind_data ret;
+	ret.turbosocket_id = turbosocket_id;
+	ret.port = htons(addr->sin6_port);
+	boost::asio::ip::address_v6 address;
+	char addr_str[INET6_ADDRSTRLEN];
+	inet_ntop(AF_INET6, &(addr->sin6_addr), addr_str, INET6_ADDRSTRLEN);
+	ret.address.from_string(addr_str);
+	return ret;
+}
+
 std::vector<unsigned char> bind_data::serialize() {
 	std::vector<unsigned char> ret;
 	for (int i = sizeof(turbosocket_id) - 1; i >=0; i--) {

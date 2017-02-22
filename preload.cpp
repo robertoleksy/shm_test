@@ -29,7 +29,8 @@ int close(int fd) {
 }
 
 int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
-	return 0;
+	std::cout << "fake bind" << std::endl;
+	return sockfd_manager.bind(sockfd, addr, addrlen);
 }
 
 ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen) {
