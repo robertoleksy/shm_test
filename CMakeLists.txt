@@ -14,5 +14,5 @@ target_link_libraries(msg_queue_server pthread rt)
 add_library(preload SHARED preload.cpp c_sockfd_manager.cpp c_turbosocket.cpp)
 target_link_libraries(preload dl rt)
 
-add_executable(preload_server preload_server.cpp c_turbosocket.cpp)
-target_link_libraries(preload_server boost_system pthread rt)
+add_executable(preload_server preload_server.cpp c_turbosocket.cpp c_sockfd_manager.cpp)
+target_link_libraries(preload_server boost_system dl pthread rt)

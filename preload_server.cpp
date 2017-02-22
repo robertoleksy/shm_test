@@ -45,7 +45,7 @@ class c_endpoint_manager final {
 	public:
 		c_endpoint_manager();
 	private:
-		std::mutex m_socket_id_map_mutex;
+		std::mutex m_maps_mutex;
 		std::map<uint64_t, std::shared_ptr<c_turbosocket>> m_socket_id_map; ///< for all sockets (binded and not binded)
 		std::map<c_endpoint, std::shared_ptr<c_turbosocket>> m_udp_socket_map; ///< only for binded sockets
 		std::atomic<bool> m_stop_flag;
@@ -53,7 +53,7 @@ class c_endpoint_manager final {
 		void connection_wait_loop(); ///< wait for new shm segment name from msg queue (other thread)
 
 		std::thread m_bind_thread;
-		void bind_wait_loop();
+		void bind_wait_loop(); ///< called from other thread
 };
 
 c_endpoint_manager::c_endpoint_manager()
@@ -70,16 +70,31 @@ void c_endpoint_manager::connection_wait_loop() {
 		bool new_connection = turbosocket.timed_wait_for_connection();
 		if (!new_connection) continue;
 		uint64_t id = turbosocket.id();
-		std::lock_guard<std::mutex> lg(m_socket_id_map_mutex);
+		std::lock_guard<std::mutex> lg(m_maps_mutex);
 		m_socket_id_map.emplace(std::make_pair(id, std::make_shared<c_turbosocket>(std::move(turbosocket))));
 	}
 }
 
 void c_endpoint_manager::bind_wait_loop() {
+	using namespace boost::interprocess;
+	const size_t size_of_serialized_data = 22; // TODO magic number
+	std::vector<unsigned char> serialized(size_of_serialized_data);
+	message_queue bind_queue(open_or_create, "turbosocket_bind_queue", 20, serialized.size()); // sizeof serialized always the same
 	while (!m_stop_flag) {
-		const size_t size_of_serialized_data = 22;
-		const std::vector<unsigned char> serialized(size_of_serialized_data);
-
+		bind_data data;
+		size_t recv_size = 0;
+		unsigned int priority = 0;
+		bool received_data = bind_queue.try_receive(serialized.data(), serialized.size(), recv_size, priority);
+		if (!received_data) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(500));
+			continue;
+		}
+		assert(recv_size == size_of_serialized_data);
+		data.deserialize(serialized);
+		c_endpoint endpoint(e_ipv6_proto_type::eIPv6_UDP, data.port, data.address);
+		std::cout << "bind turbosocket with id " << data.turbosocket_id << " to port " << data.port << std::endl;
+		std::lock_guard<std::mutex> lg(m_maps_mutex);
+		m_udp_socket_map.emplace(std::make_pair(endpoint, m_socket_id_map.at(data.turbosocket_id)));
 	}
 }
 
