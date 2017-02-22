@@ -133,6 +133,16 @@ bool c_turbosocket::timed_wait_for_connection() { // TODO code duplication
 	return true;
 }
 
+bool c_turbosocket::ready_for_read() {
+	bool lock = m_lock.try_lock();
+	if (!lock) return false;
+	void * addr = m_shm_region.get_address();
+	header * const header_ptr = static_cast<header *>(addr);
+	bool ret = header_ptr->message_in;
+	m_lock.unlock();
+	return ret;
+}
+
 uint64_t c_turbosocket::id() const {
 	return m_id;
 }

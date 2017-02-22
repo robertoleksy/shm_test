@@ -20,6 +20,12 @@ class c_turbosocket final {
 		void connect_as_client();
 		void wait_for_connection(); // block function
 		bool timed_wait_for_connection(); ///< wait with timeout, return true if connected
+		/**
+		 * @brief ready_for_read
+		 * check if data is ready for read, if return true get_buffer_for_read() returns immediately
+		 * not blocks
+		 */
+		bool ready_for_read();
 		uint64_t id() const;
 	private:
 		struct header {
