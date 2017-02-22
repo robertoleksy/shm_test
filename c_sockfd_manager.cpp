@@ -52,3 +52,33 @@ c_turbosocket &c_sockfd_manager::get_turbosocket_for_descriptor(int fd) {
 	}
 	throw std::invalid_argument("not found descriptor " + std::to_string(fd));
 }
+
+std::vector<unsigned char> bind_data::serialize() {
+	std::vector<unsigned char> ret;
+	for (int i = sizeof(turbosocket_id) - 1; i >=0; i--) {
+		unsigned char byte = static_cast<unsigned char>(turbosocket_id >> i);
+		ret.push_back(byte);
+	}
+	ret.push_back(port & 0xFF);
+	ret.push_back(port >> 8);
+	boost::asio::ip::address_v6::bytes_type ip_as_bytes = address.to_bytes();
+	for (const auto & byte : ip_as_bytes)
+		ret.emplace_back(byte);
+	return ret;
+}
+
+void bind_data::deserialize(std::vector<unsigned char> buf) {
+	turbosocket_id = 0;
+	for (size_t i = 0; i < sizeof(turbosocket_id); i++) {
+		turbosocket_id += static_cast<unsigned char>((buf.at(i) << (i * 8)));
+	}
+	port = buf.at(4);
+	port += buf.at(5) << 8;
+	boost::asio::ip::address_v6::bytes_type ip_bytes;
+	auto it = (buf.begin() + 6);
+	for (size_t i = 0; i < ip_bytes.size(); i++) {
+		ip_bytes.at(i) = *it;
+		++it;
+	}
+	address = boost::asio::ip::address_v6(ip_bytes);
+}
