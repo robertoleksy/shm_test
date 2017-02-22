@@ -17,7 +17,7 @@ struct bind_data {
 
 class c_sockfd_manager {
 	public:
-		c_sockfd_manager();
+		c_sockfd_manager() = default;
 		int add_udp_descriptor(int domain, int type, int protocol);
 		int add_tcp_descriptor(int domain, int type, int protocol);
 		int close(int fd);
@@ -26,7 +26,6 @@ class c_sockfd_manager {
 	private:
 		std::map<int, c_turbosocket> m_udp_descriptors;
 		std::map<int, c_turbosocket> m_tcp_descriptors;
-		boost::interprocess::message_queue m_bind_queue; // for bind notification
 		bind_data generate_bind_data(uint64_t turbosocket_id, const struct sockaddr_in6 *addr);
 
 };

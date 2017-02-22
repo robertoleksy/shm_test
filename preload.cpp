@@ -6,12 +6,13 @@
 
 static c_sockfd_manager sockfd_manager;
 
+
 int socket(int domain, int type, int protocol) noexcept {
 	std::cout << "fake socket()" << std::endl;
 	try {
-		if (type == SOCK_DGRAM && domain == AF_INET) // XXX AF_INET6
+		if (type == SOCK_DGRAM && domain == AF_INET6) // XXX AF_INET6
 			return sockfd_manager.add_udp_descriptor(domain, type, protocol);
-		else if (type == SOCK_STREAM && domain == AF_INET) { // XXX AF_INET6
+		else if (type == SOCK_STREAM && domain == AF_INET6) { // XXX AF_INET6
 			return  sockfd_manager.add_tcp_descriptor(domain, type, protocol);
 		}
 	} catch (const std::exception &) {

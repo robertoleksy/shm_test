@@ -44,6 +44,7 @@ bool c_endpoint::operator < (const c_endpoint &rhs) const {
 class c_endpoint_manager final {
 	public:
 		c_endpoint_manager();
+		~c_endpoint_manager();
 	private:
 		std::mutex m_maps_mutex;
 		std::map<uint64_t, std::shared_ptr<c_turbosocket>> m_socket_id_map; ///< for all sockets (binded and not binded)
@@ -62,6 +63,12 @@ c_endpoint_manager::c_endpoint_manager()
 	m_connection_thread([this](){connection_wait_loop();}),
 	m_bind_thread([this](){bind_wait_loop();})
 {
+}
+
+c_endpoint_manager::~c_endpoint_manager() {
+	m_stop_flag = true;
+	m_connection_thread.join();
+	m_bind_thread.join();
 }
 
 void c_endpoint_manager::connection_wait_loop() {
@@ -109,7 +116,8 @@ void c_endpoint_manager::bind_wait_loop() {
 
 
 int main() {
-
+	c_endpoint_manager enpoint_manager;
+	std::this_thread::sleep_for(std::chrono::seconds(600));
 }
 
 
