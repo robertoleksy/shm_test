@@ -45,6 +45,13 @@ class c_endpoint_manager final {
 	public:
 		c_endpoint_manager();
 		~c_endpoint_manager();
+		/**
+		 * handler will be called for each received data buffer
+		 * The function signature of the handler must be
+		 * void handler (void *buf, size_t buf_size)
+		 */
+		template <typename F>
+		void foreach_read(F &&handler);
 	private:
 		std::mutex m_maps_mutex;
 		std::map<uint64_t, std::shared_ptr<c_turbosocket>> m_socket_id_map; ///< for all sockets (binded and not binded)
@@ -55,6 +62,8 @@ class c_endpoint_manager final {
 
 		std::thread m_bind_thread;
 		void bind_wait_loop(); ///< called from other thread
+
+
 };
 
 c_endpoint_manager::c_endpoint_manager()
@@ -107,7 +116,20 @@ void c_endpoint_manager::bind_wait_loop() {
 
 
 
-
+template <typename F>
+void c_endpoint_manager::foreach_read(F &&handler) {
+	std::lock_guard<std::mutex> lg(m_maps_mutex);
+	for (auto & element : m_socket_id_map) {
+		std::shared_ptr<c_turbosocket> turbosocket(element.second);
+		if (turbosocket->ready_for_read()) {
+			void * buf = nullptr;
+			size_t buf_size = 0;
+			std::tie<void *, size_t>(buf, buf_size) = turbosocket->get_buffer_for_read();
+			handler(buf, buf_size);
+			turbosocket->received(); // end of receive
+		}
+	}
+}
 
 
 
@@ -117,7 +139,14 @@ void c_endpoint_manager::bind_wait_loop() {
 
 int main() {
 	c_endpoint_manager enpoint_manager;
+	while (true) {
+		enpoint_manager.foreach_read([](void *buf, size_t buf_size) {
+			std::cout << "readed " << buf_size << " bytes" << std::endl;
+		});
+	}
 	std::this_thread::sleep_for(std::chrono::seconds(600));
 }
+
+
 
 
