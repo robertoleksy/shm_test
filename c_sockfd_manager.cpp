@@ -63,10 +63,19 @@ int c_sockfd_manager::bind(int sockfd, const sockaddr *addr, socklen_t addrlen) 
 
 	auto it_tcp = m_tcp_descriptors.find(sockfd);
 	auto it_udp = m_udp_descriptors.find(sockfd);
+
+	auto send_bind_request = [this](c_turbosocket &turbosocket, const struct sockaddr_in6 *addr) {
+		using namespace boost::interprocess;
+		bind_data data = generate_bind_data(turbosocket.id(), addr);
+		const std::vector<unsigned char> serialized = data.serialize();
+		message_queue bind_queue(open_or_create, "turbosocket_bind_queue", 20, serialized.size()); // sizeof serialized always the same
+		bind_queue.send(serialized.data(), serialized.size(), 0);
+	};// lambda
+
 	if (it_tcp != m_tcp_descriptors.end()) {
-
+		send_bind_request(it_tcp->second, reinterpret_cast<const struct sockaddr_in6 *>(addr));
 	} else if (it_udp != m_udp_descriptors.end()) {
-
+		send_bind_request(it_udp->second, reinterpret_cast<const struct sockaddr_in6 *>(addr));
 	}
 	return ret;
 }
@@ -75,7 +84,6 @@ bind_data c_sockfd_manager::generate_bind_data(uint64_t turbosocket_id, const so
 	bind_data ret;
 	ret.turbosocket_id = turbosocket_id;
 	ret.port = htons(addr->sin6_port);
-	boost::asio::ip::address_v6 address;
 	char addr_str[INET6_ADDRSTRLEN];
 	inet_ntop(AF_INET6, &(addr->sin6_addr), addr_str, INET6_ADDRSTRLEN);
 	ret.address.from_string(addr_str);
