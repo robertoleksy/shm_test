@@ -36,23 +36,42 @@ int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
 }
 
 ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen) {
-
-	return -1;
+	std::cout << "fake receivefrom" << std::endl;
+	void *m_buf = nullptr;
+	size_t m_buf_size = 0;
+	try {
+		c_turbosocket &turbosock_ref = sockfd_manager.get_turbosocket_for_descriptor(sockfd);
+		std::tie<void *, size_t>(m_buf, m_buf_size) = turbosock_ref.get_buffer_for_read();
+		if (len < m_buf_size) {
+			turbosock_ref.received();
+			return -1;
+		}
+		std::memcpy(buf, m_buf, m_buf_size);
+		turbosock_ref.received();
+		return static_cast<ssize_t>(m_buf_size);
+	} catch (const std::invalid_argument &) {
+		ssize_t(*original_recvfrom)(int, void *, size_t, int, struct sockaddr *, socklen_t *);
+		original_recvfrom = reinterpret_cast<decltype (original_recvfrom)>(dlsym(RTLD_NEXT, "receiveform"));
+	}
 }
 
 ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen) {
 	std::cout << "fake sendto" << std::endl;
-	void * m_buf = nullptr;
+	void *m_buf = nullptr;
 	size_t m_buf_size = 0;
 	try {
 		c_turbosocket &turbosock_ref = sockfd_manager.get_turbosocket_for_descriptor(sockfd);
 		std::tie<void *, size_t>(m_buf, m_buf_size) = turbosock_ref.get_buffer_for_write();
-		if (len > m_buf_size) return -1;
+		if (len > m_buf_size) {
+			turbosock_ref.send();
+			std::cout << "sendto ret -1: len > m_buf_size" << std::endl;
+			return -1;
+		}
 		std::memcpy(m_buf, buf, len);
 		turbosock_ref.send(len);
-		return len;
-	} catch (const std::invalid_argument &) {
-		int(*original_sendto)(int, const void *, size_t, int, const struct sockaddr *, socklen_t);
+		return static_cast<ssize_t>(len);
+	} catch (const std::invalid_argument &) { // not found descriptor in sockfd_manager
+		ssize_t(*original_sendto)(int, const void *, size_t, int, const struct sockaddr *, socklen_t);
 		original_sendto = reinterpret_cast<decltype (original_sendto)>(dlsym(RTLD_NEXT, "sendto"));
 		return original_sendto(sockfd, buf, len, flags, dest_addr, addrlen);
 	}
