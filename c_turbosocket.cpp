@@ -31,8 +31,10 @@ std::tuple<void *, size_t> c_turbosocket::get_buffer_for_read() {
 	m_lock.lock();
 	if (!header_ptr->message_in)
 		header_ptr->cond_empty.wait(m_lock);
-
-	return std::make_tuple(m_shm_data_buff, m_shm_size - sizeof(header));
+	if (header_ptr->data_size == 0)
+		return std::make_tuple(m_shm_data_buff, m_shm_size - sizeof(header));
+	else
+		return std::make_tuple(m_shm_data_buff, header_ptr->data_size);
 }
 
 void c_turbosocket::send() {
@@ -41,6 +43,12 @@ void c_turbosocket::send() {
 	header_ptr->message_in = true;
 	header_ptr->cond_empty.notify_one();
 	m_lock.unlock();
+}
+
+void c_turbosocket::send(size_t size) {
+	header * const header_ptr = static_cast<header *>(m_shm_region.get_address());
+	header_ptr->data_size = size;
+	send();
 }
 
 void c_turbosocket::received() {

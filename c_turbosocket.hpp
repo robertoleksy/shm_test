@@ -16,6 +16,7 @@ class c_turbosocket final {
 		std::tuple<void *, size_t> get_buffer_for_read(); // block until buffer ready
 
 		void send(); //< send data writed to buffer get by get_buffer
+		void send(size_t size); ///< send and mark size of sended data
 		void received(); //< receive data writed to buffer get by get_buffer
 		void connect_as_client();
 		void wait_for_connection(); // block function
@@ -38,6 +39,8 @@ class c_turbosocket final {
 			bool message_in = false;
 			// socket unique ID
 			uint64_t id;
+			// size of data
+			size_t data_size;
 		};
 
 		uint64_t get_uid() const;

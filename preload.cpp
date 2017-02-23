@@ -47,6 +47,6 @@ ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct 
 	std::tie<void *, size_t>(m_buf, m_buf_size) = turbosock_ref.get_buffer_for_write();
 	if (len > m_buf_size) return -1;
 	std::memcpy(m_buf, buf, len);
-	turbosock_ref.send();
+	turbosock_ref.send(len);
 	return len;
 }

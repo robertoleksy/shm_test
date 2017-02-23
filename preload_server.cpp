@@ -141,10 +141,14 @@ int main() {
 	c_endpoint_manager enpoint_manager;
 	while (true) {
 		enpoint_manager.foreach_read([](void *buf, size_t buf_size) {
-			std::cout << "readed " << buf_size << " bytes" << std::endl;
+			std::cout << "readed " << buf_size << " bytes\n";
+			char *str = static_cast<char *>(buf);
+			for (int i = 0; i < 8; i++)
+				std::cout << str[i];
+			std::cout << std::endl;
 		});
+		std::this_thread::sleep_for(std::chrono::seconds(3));
 	}
-	std::this_thread::sleep_for(std::chrono::seconds(600));
 }
 
 
