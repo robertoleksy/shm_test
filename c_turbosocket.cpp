@@ -157,9 +157,31 @@ uint64_t c_turbosocket::id() const {
 	return m_id;
 }
 
+const std::array<unsigned char, 16> &c_turbosocket::get_dst_ipv6() const {
+	return get_heared_ptr()->destination_ipv6;
+}
+
+const std::array<unsigned char, 16> &c_turbosocket::get_src_ipv6() const {
+	return get_heared_ptr()->source_ipv6;
+}
+
+unsigned short c_turbosocket::get_dst_port() const {
+	return get_heared_ptr()->destination_port;
+}
+
+unsigned short c_turbosocket::get_src_port() const {
+	return get_heared_ptr()->source_port;
+}
+
 uint64_t c_turbosocket::get_uid() const {
 	std::random_device rd;
 	std::mt19937_64 gen(rd());
 	std::uniform_int_distribution<uint64_t> dis;
 	return dis(gen);
+}
+
+c_turbosocket::header *c_turbosocket::get_heared_ptr() const {
+	void *addr = m_shm_region.get_address();
+	header * const header_ptr = static_cast<header *>(addr);
+	return header_ptr;
 }

@@ -28,6 +28,10 @@ class c_turbosocket final {
 		 */
 		bool ready_for_read();
 		uint64_t id() const;
+		const std::array<unsigned char, 16> &get_dst_ipv6() const; ///< returns destination address from header
+		const std::array<unsigned char, 16> &get_src_ipv6() const; ///< returns source address from header
+		unsigned short get_dst_port() const;
+		unsigned short get_src_port() const;
 	private:
 		struct header {
 			boost::interprocess::interprocess_mutex mutex;
@@ -49,6 +53,7 @@ class c_turbosocket final {
 		};
 
 		uint64_t get_uid() const;
+		header *get_heared_ptr() const;
 
 		const std::string m_queue_name = "tunserver_turbosocket_queue";
 		static constexpr size_t m_max_queue_massage_size = 20;

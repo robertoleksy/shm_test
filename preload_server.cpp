@@ -125,6 +125,13 @@ void c_endpoint_manager::foreach_read(F &&handler) {
 			void * buf = nullptr;
 			size_t buf_size = 0;
 			std::tie<void *, size_t>(buf, buf_size) = turbosocket->get_buffer_for_read();
+			boost::asio::ip::address_v6::bytes_type ipv6_bytes;
+			std::copy(turbosocket->get_dst_ipv6().begin(), turbosocket->get_dst_ipv6().end(), ipv6_bytes.begin());
+			boost::asio::ip::address_v6 ipv6(ipv6_bytes);
+			unsigned short port = turbosocket->get_dst_port();
+			std::cout << "readed data, destination:\n";
+			std::cout << "ip " << ipv6 << "\n";
+			std::cout << "port " << ntohs(port) << std::endl;
 			handler(buf, buf_size);
 			turbosocket->received(); // end of receive
 		}
@@ -143,7 +150,7 @@ int main() {
 		enpoint_manager.foreach_read([](void *buf, size_t buf_size) {
 			std::cout << "readed " << buf_size << " bytes\n";
 			char *str = static_cast<char *>(buf);
-			for (int i = 0; i < 8; i++)
+			for (size_t i = 0; i < buf_size; i++)
 				std::cout << str[i];
 			std::cout << std::endl;
 		});
