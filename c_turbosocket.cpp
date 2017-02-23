@@ -45,9 +45,11 @@ void c_turbosocket::send() {
 	m_lock.unlock();
 }
 
-void c_turbosocket::send(size_t size) {
+void c_turbosocket::send(size_t size, const unsigned char dst_address[16], unsigned short dst_port) {
 	header * const header_ptr = static_cast<header *>(m_shm_region.get_address());
 	header_ptr->data_size = size;
+	std::copy(dst_address, dst_address + 16, header_ptr->destination_ipv6.begin());
+	header_ptr->destination_port = dst_port;
 	send();
 }
 

@@ -52,6 +52,7 @@ ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *
 	} catch (const std::invalid_argument &) {
 		ssize_t(*original_recvfrom)(int, void *, size_t, int, struct sockaddr *, socklen_t *);
 		original_recvfrom = reinterpret_cast<decltype (original_recvfrom)>(dlsym(RTLD_NEXT, "receiveform"));
+		return original_recvfrom(sockfd, buf, len, flags, src_addr, addrlen);
 	}
 }
 
@@ -68,7 +69,9 @@ ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct 
 			return -1;
 		}
 		std::memcpy(m_buf, buf, len);
-		turbosock_ref.send(len);
+		assert(dest_addr->sa_family == AF_INET6);
+		const sockaddr_in6 *addr = reinterpret_cast<const sockaddr_in6 *>(dest_addr);
+		turbosock_ref.send(len, addr->sin6_addr.s6_addr, addr->sin6_port);
 		return static_cast<ssize_t>(len);
 	} catch (const std::invalid_argument &) { // not found descriptor in sockfd_manager
 		ssize_t(*original_sendto)(int, const void *, size_t, int, const struct sockaddr *, socklen_t);
