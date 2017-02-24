@@ -16,10 +16,13 @@ class c_turbosocket final {
 		c_turbosocket(const c_turbosocket &) = delete;
 
 
-		std::tuple<void *, size_t> get_buffer_for_write_to_server(); // block until buffer ready
-		std::tuple<void *, size_t> get_buffer_for_write_to_client(); // block until buffer ready
-		std::tuple<void *, size_t> get_buffer_for_read_from_server(); // block until buffer ready
-		std::tuple<void *, size_t> get_buffer_for_read_from_client(); // block until buffer ready
+		std::tuple<void *, size_t> get_buffer_for_write_to_server(); ///< block until buffer ready
+		std::tuple<void *, size_t> get_buffer_for_write_to_client(); ///< block until buffer ready
+		std::tuple<void *, size_t> get_buffer_for_read_from_server(); ///< block until buffer ready
+		std::tuple<void *, size_t> get_buffer_for_read_from_client(); ///< block until buffer ready
+		void send_to_server(size_t size, const unsigned char dst_address[16], unsigned short dst_port);
+		void send_to_client(size_t size, const unsigned char dst_address[16], unsigned short dst_port);
+
 
 		std::tuple<void *, size_t> get_buffer_for_write(); // block until buffer ready
 		std::tuple<void *, size_t> get_buffer_for_read(); // block until buffer ready
@@ -54,6 +57,9 @@ class c_turbosocket final {
 			uint64_t id = 0;
 			// size of data
 			size_t data_size;
+
+			std::array<unsigned char, 16> ipv6;
+			unsigned short port;
 
 			std::array<unsigned char, 16> destination_ipv6;
 			std::array<unsigned char, 16> source_ipv6;

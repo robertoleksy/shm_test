@@ -53,6 +53,24 @@ std::tuple<void *, size_t> c_turbosocket::get_buffer_for_read_from_client() {
 
 }
 
+void c_turbosocket::send_to_server(size_t size, const unsigned char dst_address[16], unsigned short dst_port) {
+	m_header_client_to_server->data_size = size;
+	std::copy(dst_address, dst_address + 16, m_header_client_to_server->ipv6.begin());
+	m_header_client_to_server->port = dst_port;
+	m_header_client_to_server->message_in = true;
+	m_header_client_to_server->cond_empty.notify_one();
+	m_lock_client_to_server.unlock();
+}
+
+void c_turbosocket::send_to_client(size_t size, const unsigned char dst_address[16], unsigned short dst_port) {
+	m_header_server_to_client->data_size = size;
+	std::copy(dst_address, dst_address + 16, m_header_server_to_client->ipv6.begin());
+	m_header_server_to_client->port = dst_port;
+	m_header_server_to_client->message_in = true;
+	m_header_server_to_client->cond_empty.notify_one();
+	m_lock_server_to_client.unlock();
+}
+
 std::tuple<void *, size_t> c_turbosocket::get_buffer_for_write() {
 //	std::cout << "full lock" << std::endl;
 	header * const header_ptr = static_cast<header *>(m_shm_region.get_address());
