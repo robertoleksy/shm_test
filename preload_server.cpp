@@ -137,6 +137,15 @@ void c_endpoint_manager::foreach_read(F &&handler) {
 			std::cout << "port " << ntohs(port) << std::endl;
 			handler(buf, buf_size);
 			turbosocket->received_from_client(); // end of receive
+
+			// send response
+			std::cout << "send response\n";
+			std::string response = "response";
+			std::tie<void *, size_t>(buf, buf_size) = turbosocket->get_buffer_for_write_to_client();
+			response.copy(static_cast<char *>(buf), response.size());
+			std::array<unsigned char, 16> ip;
+			ip.fill(0xAB);
+			turbosocket->send_to_client(response.size() + 1, ip.data(), 4321); // size + 1 for \0
 		}
 	}
 }

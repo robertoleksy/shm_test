@@ -48,6 +48,9 @@ ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *
 		}
 		std::memcpy(buf, m_buf, m_buf_size);
 		turbosock_ref.received_from_client();
+		sockaddr_in6 *addr = reinterpret_cast<sockaddr_in6 *>(src_addr);
+		std::memcpy(addr->sin6_addr.s6_addr, turbosock_ref.get_cli_ipv6().data(), turbosock_ref.get_cli_ipv6().size());
+		addr->sin6_port = turbosock_ref.get_cli_port();
 		return static_cast<ssize_t>(m_buf_size);
 	} catch (const std::invalid_argument &) {
 		ssize_t(*original_recvfrom)(int, void *, size_t, int, struct sockaddr *, socklen_t *);
