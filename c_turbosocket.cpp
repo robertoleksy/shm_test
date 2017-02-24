@@ -15,6 +15,44 @@ c_turbosocket::c_turbosocket(c_turbosocket &&other) noexcept {
 	this->m_lock = std::move(other.m_lock);
 }
 
+std::tuple<void *, size_t> c_turbosocket::get_buffer_for_write_to_server() {
+	m_lock_client_to_server.lock();
+	if (m_header_client_to_server->message_in)
+		m_header_client_to_server->cond_full.wait(m_lock_client_to_server);
+	return std::make_tuple(static_cast<char *>(m_shm_region_client_to_server.get_address()) + sizeof(header), m_size_of_single_buffer);
+}
+
+std::tuple<void *, size_t> c_turbosocket::get_buffer_for_write_to_client() {
+	m_lock_server_to_client.lock();
+	if (m_header_server_to_client->message_in)
+		m_header_server_to_client->cond_full.wait(m_lock_server_to_client);
+	return std::make_tuple(static_cast<char *>(m_shm_region_server_to_client.get_address()) + sizeof(header), m_size_of_single_buffer);
+}
+
+std::tuple<void *, size_t> c_turbosocket::get_buffer_for_read_from_server() {
+	m_lock_server_to_client.lock();
+	if (!m_header_server_to_client->message_in)
+		m_header_server_to_client->cond_empty.wait(m_lock_server_to_client);
+	void *data_ptr = static_cast<char *>(m_shm_region_server_to_client.get_address()) + sizeof(header);
+	if (m_header_server_to_client->data_size == 0)
+		return std::make_tuple(data_ptr, m_size_of_single_buffer);
+	else
+		return std::make_tuple(data_ptr, m_header_server_to_client->data_size);
+}
+
+std::tuple<void *, size_t> c_turbosocket::get_buffer_for_read_from_client() {
+	m_lock_server_to_client.lock();
+	if (!m_header_client_to_server->message_in)
+		m_header_client_to_server->cond_empty.wait(m_lock_client_to_server);
+
+	void *data_ptr = static_cast<char *>(m_shm_region_client_to_server.get_address()) + sizeof(header);
+	if (m_header_client_to_server->data_size == 0)
+		return std::make_tuple(data_ptr, m_size_of_single_buffer);
+	else
+		return std::make_tuple(data_ptr, m_header_client_to_server->data_size);
+
+}
+
 std::tuple<void *, size_t> c_turbosocket::get_buffer_for_write() {
 //	std::cout << "full lock" << std::endl;
 	header * const header_ptr = static_cast<header *>(m_shm_region.get_address());

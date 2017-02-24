@@ -8,10 +8,19 @@
 #include <tuple>
 
 class c_turbosocket final {
+	private:
+		struct header;
 	public:
 		c_turbosocket() = default;
 		c_turbosocket(c_turbosocket && other) noexcept;
 		c_turbosocket(const c_turbosocket &) = delete;
+
+
+		std::tuple<void *, size_t> get_buffer_for_write_to_server(); // block until buffer ready
+		std::tuple<void *, size_t> get_buffer_for_write_to_client(); // block until buffer ready
+		std::tuple<void *, size_t> get_buffer_for_read_from_server(); // block until buffer ready
+		std::tuple<void *, size_t> get_buffer_for_read_from_client(); // block until buffer ready
+
 		std::tuple<void *, size_t> get_buffer_for_write(); // block until buffer ready
 		std::tuple<void *, size_t> get_buffer_for_read(); // block until buffer ready
 
@@ -58,7 +67,8 @@ class c_turbosocket final {
 
 		const std::string m_queue_name = "tunserver_turbosocket_queue";
 		static constexpr size_t m_max_queue_massage_size = 20;
-		const size_t m_shm_size = (65 * 1024 + sizeof(header)) * 2; // max MTU + header for 2 direction
+		const size_t m_size_of_single_buffer = 65 * 1024;
+		const size_t m_shm_size = (m_size_of_single_buffer + sizeof(header)) * 2; // max MTU + header for 2 direction
 
 		boost::interprocess::mapped_region m_shm_region_client_to_server; ///< for sending messages from client to server
 		boost::interprocess::mapped_region m_shm_region_server_to_client; ///< for sending messages from server to client
