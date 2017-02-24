@@ -7,14 +7,6 @@
 
 using namespace boost::interprocess;
 
-/*c_turbosocket::c_turbosocket(c_turbosocket &&other) noexcept {
-	if (this == &other) return;
-	this->m_shm_region = std::move(other.m_shm_region);
-	this->m_shm_data_buff = other.m_shm_data_buff;
-	other.m_shm_data_buff = nullptr;
-	this->m_lock = std::move(other.m_lock);
-}*/
-
 std::tuple<void *, size_t> c_turbosocket::get_buffer_for_write_to_server() {
 	m_lock_client_to_server.lock();
 	if (m_header_client_to_server->message_in)
@@ -88,6 +80,7 @@ void c_turbosocket::received_from_client() {
 }
 
 std::tuple<void *, size_t> c_turbosocket::get_buffer_for_write() {
+	assert(false);
 //	std::cout << "full lock" << std::endl;
 	header * const header_ptr = static_cast<header *>(m_shm_region.get_address());
 	m_lock.lock();
@@ -98,6 +91,7 @@ std::tuple<void *, size_t> c_turbosocket::get_buffer_for_write() {
 }
 
 std::tuple<void *, size_t> c_turbosocket::get_buffer_for_read() {
+	assert(false);
 //	std::cout << "empty lock" << std::endl;
 	header * const header_ptr = static_cast<header *>(m_shm_region.get_address());
 	m_lock.lock();
@@ -184,6 +178,7 @@ bool c_turbosocket::timed_wait_for_connection() { // TODO code duplication
 }
 
 bool c_turbosocket::ready_for_read() {
+	assert(false);
 	bool lock = m_lock.try_lock();
 	if (!lock) return false;
 	void * addr = m_shm_region.get_address();

@@ -36,13 +36,12 @@ int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
 }
 
 ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen) {
-	return -1;
 	std::cout << "fake receivefrom" << std::endl;
 	void *m_buf = nullptr;
 	size_t m_buf_size = 0;
 	try {
 		c_turbosocket &turbosock_ref = sockfd_manager.get_turbosocket_for_descriptor(sockfd);
-		std::tie<void *, size_t>(m_buf, m_buf_size) = turbosock_ref.get_buffer_for_read_from_client();
+		std::tie<void *, size_t>(m_buf, m_buf_size) = turbosock_ref.get_buffer_for_read_from_server();
 		if (len < m_buf_size) {
 			turbosock_ref.received_from_client();
 			return -1;
