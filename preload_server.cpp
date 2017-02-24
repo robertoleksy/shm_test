@@ -85,8 +85,11 @@ void c_endpoint_manager::connection_wait_loop() {
 		c_turbosocket turbosocket;
 		bool new_connection = turbosocket.timed_wait_for_connection();
 		if (!new_connection) continue;
+		std::cout << "new connsetion\n";
 		uint64_t id = turbosocket.id();
+		assert(id != 0);
 		std::lock_guard<std::mutex> lg(m_maps_mutex);
+		std::cout << "emplace turbosocket into m_socket_id_map\n";
 		m_socket_id_map.emplace(std::make_pair(id, std::make_shared<c_turbosocket>(std::move(turbosocket))));
 	}
 }
@@ -121,19 +124,19 @@ void c_endpoint_manager::foreach_read(F &&handler) {
 	std::lock_guard<std::mutex> lg(m_maps_mutex);
 	for (auto & element : m_socket_id_map) {
 		std::shared_ptr<c_turbosocket> turbosocket(element.second);
-		if (turbosocket->ready_for_read()) {
+		if (turbosocket->server_data_ready_for_read()) {
 			void * buf = nullptr;
 			size_t buf_size = 0;
-			std::tie<void *, size_t>(buf, buf_size) = turbosocket->get_buffer_for_read();
+			std::tie<void *, size_t>(buf, buf_size) = turbosocket->get_buffer_for_read_from_client();
 			boost::asio::ip::address_v6::bytes_type ipv6_bytes;
-			std::copy(turbosocket->get_dst_ipv6().begin(), turbosocket->get_dst_ipv6().end(), ipv6_bytes.begin());
+			std::copy(turbosocket->get_srv_ipv6().begin(), turbosocket->get_srv_ipv6().end(), ipv6_bytes.begin());
 			boost::asio::ip::address_v6 ipv6(ipv6_bytes);
-			unsigned short port = turbosocket->get_dst_port();
+			unsigned short port = turbosocket->get_srv_port();
 			std::cout << "readed data, destination:\n";
 			std::cout << "ip " << ipv6 << "\n";
 			std::cout << "port " << ntohs(port) << std::endl;
 			handler(buf, buf_size);
-			turbosocket->received(); // end of receive
+			turbosocket->received_from_client(); // end of receive
 		}
 	}
 }
@@ -152,7 +155,7 @@ int main() {
 			char *str = static_cast<char *>(buf);
 			for (size_t i = 0; i < buf_size; i++)
 				std::cout << str[i];
-			std::cout << std::endl;
+			std::cout << "end of foreach lambda loop" << std::endl;
 		});
 		std::this_thread::sleep_for(std::chrono::seconds(3));
 	}

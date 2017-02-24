@@ -36,18 +36,19 @@ int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
 }
 
 ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen) {
+	return -1;
 	std::cout << "fake receivefrom" << std::endl;
 	void *m_buf = nullptr;
 	size_t m_buf_size = 0;
 	try {
 		c_turbosocket &turbosock_ref = sockfd_manager.get_turbosocket_for_descriptor(sockfd);
-		std::tie<void *, size_t>(m_buf, m_buf_size) = turbosock_ref.get_buffer_for_read();
+		std::tie<void *, size_t>(m_buf, m_buf_size) = turbosock_ref.get_buffer_for_read_from_client();
 		if (len < m_buf_size) {
-			turbosock_ref.received();
+			turbosock_ref.received_from_client();
 			return -1;
 		}
 		std::memcpy(buf, m_buf, m_buf_size);
-		turbosock_ref.received();
+		turbosock_ref.received_from_client();
 		return static_cast<ssize_t>(m_buf_size);
 	} catch (const std::invalid_argument &) {
 		ssize_t(*original_recvfrom)(int, void *, size_t, int, struct sockaddr *, socklen_t *);
@@ -62,16 +63,17 @@ ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct 
 	size_t m_buf_size = 0;
 	try {
 		c_turbosocket &turbosock_ref = sockfd_manager.get_turbosocket_for_descriptor(sockfd);
-		std::tie<void *, size_t>(m_buf, m_buf_size) = turbosock_ref.get_buffer_for_write();
-		if (len > m_buf_size) {
+		std::cout << "get buffer for write to server\n";
+		std::tie<void *, size_t>(m_buf, m_buf_size) = turbosock_ref.get_buffer_for_write_to_server();
+/*		if (len > m_buf_size) { // TODO
 			turbosock_ref.send();
 			std::cout << "sendto ret -1: len > m_buf_size" << std::endl;
 			return -1;
-		}
+		}*/
 		std::memcpy(m_buf, buf, len);
 		assert(dest_addr->sa_family == AF_INET6);
 		const sockaddr_in6 *addr = reinterpret_cast<const sockaddr_in6 *>(dest_addr);
-		turbosock_ref.send(len, addr->sin6_addr.s6_addr, addr->sin6_port);
+		turbosock_ref.send_to_server(len, addr->sin6_addr.s6_addr, addr->sin6_port);
 		return static_cast<ssize_t>(len);
 	} catch (const std::invalid_argument &) { // not found descriptor in sockfd_manager
 		ssize_t(*original_sendto)(int, const void *, size_t, int, const struct sockaddr *, socklen_t);

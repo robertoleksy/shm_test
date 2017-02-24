@@ -7,13 +7,13 @@
 
 using namespace boost::interprocess;
 
-c_turbosocket::c_turbosocket(c_turbosocket &&other) noexcept {
+/*c_turbosocket::c_turbosocket(c_turbosocket &&other) noexcept {
 	if (this == &other) return;
 	this->m_shm_region = std::move(other.m_shm_region);
 	this->m_shm_data_buff = other.m_shm_data_buff;
 	other.m_shm_data_buff = nullptr;
 	this->m_lock = std::move(other.m_lock);
-}
+}*/
 
 std::tuple<void *, size_t> c_turbosocket::get_buffer_for_write_to_server() {
 	m_lock_client_to_server.lock();
@@ -159,6 +159,7 @@ void c_turbosocket::wait_for_connection() {
 }
 
 bool c_turbosocket::timed_wait_for_connection() { // TODO code duplication
+//	std::cout << "timed wait for connection\n";
 	message_queue msg_queue(open_or_create, m_queue_name.c_str(), 20, m_max_queue_massage_size);
 	std::array<char, m_max_queue_massage_size> shm_name;
 	size_t recv_size = 0;
@@ -185,24 +186,32 @@ bool c_turbosocket::ready_for_read() {
 	return ret;
 }
 
+bool c_turbosocket::server_data_ready_for_read() {
+	bool lock = m_lock_client_to_server.try_lock();
+	if (!lock) return false;
+	bool ret = m_header_client_to_server->message_in;
+	m_lock_client_to_server.unlock();
+	return ret;
+}
+
 uint64_t c_turbosocket::id() const {
 	return m_id;
 }
 
-const std::array<unsigned char, 16> &c_turbosocket::get_dst_ipv6() const {
-	return get_heared_ptr()->destination_ipv6;
+const std::array<unsigned char, 16> &c_turbosocket::get_srv_ipv6() const {
+	return m_header_client_to_server->ipv6;
 }
 
-const std::array<unsigned char, 16> &c_turbosocket::get_src_ipv6() const {
-	return get_heared_ptr()->source_ipv6;
+const std::array<unsigned char, 16> &c_turbosocket::get_cli_ipv6() const {
+	return m_header_server_to_client->ipv6;
 }
 
-unsigned short c_turbosocket::get_dst_port() const {
-	return get_heared_ptr()->destination_port;
+unsigned short c_turbosocket::get_srv_port() const {
+	return m_header_client_to_server->destination_port;
 }
 
-unsigned short c_turbosocket::get_src_port() const {
-	return get_heared_ptr()->source_port;
+unsigned short c_turbosocket::get_cli_port() const {
+	return m_header_server_to_client->source_port;
 }
 
 uint64_t c_turbosocket::get_uid() const {
@@ -219,7 +228,7 @@ c_turbosocket::header *c_turbosocket::get_heared_ptr() const {
 }
 
 void c_turbosocket::open_or_create_shm(const char *name) {
-	shared_memory_object shm(create_only, name, read_write);
+	shared_memory_object shm(open_or_create, name, read_write);
 	shm.truncate(static_cast<offset_t>(m_shm_size));
 	m_shm_region_client_to_server = mapped_region(shm, read_write, 0, m_shm_size / 2); // first half
 	m_shm_region_server_to_client = mapped_region(shm, read_write, m_shm_size / 2, m_shm_size / 2); // second half

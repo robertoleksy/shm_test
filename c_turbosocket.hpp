@@ -12,7 +12,7 @@ class c_turbosocket final {
 		struct header;
 	public:
 		c_turbosocket() = default;
-		c_turbosocket(c_turbosocket && other) noexcept;
+		c_turbosocket(c_turbosocket && other) = default;
 		c_turbosocket(const c_turbosocket &) = delete;
 
 
@@ -41,11 +41,12 @@ class c_turbosocket final {
 		 * not blocks
 		 */
 		bool ready_for_read();
+		bool server_data_ready_for_read();
 		uint64_t id() const;
-		const std::array<unsigned char, 16> &get_dst_ipv6() const; ///< returns destination address from header
-		const std::array<unsigned char, 16> &get_src_ipv6() const; ///< returns source address from header
-		unsigned short get_dst_port() const;
-		unsigned short get_src_port() const;
+		const std::array<unsigned char, 16> &get_srv_ipv6() const; ///< returns destination address from server header
+		const std::array<unsigned char, 16> &get_cli_ipv6() const; ///< returns source address from client header
+		unsigned short get_srv_port() const;
+		unsigned short get_cli_port() const;
 	private:
 		struct header {
 			boost::interprocess::interprocess_mutex mutex;
