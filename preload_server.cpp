@@ -96,7 +96,7 @@ void c_endpoint_manager::connection_wait_loop() {
 
 void c_endpoint_manager::bind_wait_loop() {
 	using namespace boost::interprocess;
-	const size_t size_of_serialized_data = 22; // TODO magic number
+	const size_t size_of_serialized_data = 26; // TODO magic number
 	std::vector<unsigned char> serialized(size_of_serialized_data);
 	message_queue bind_queue(open_or_create, "turbosocket_bind_queue", 20, serialized.size()); // sizeof serialized always the same
 	while (!m_stop_flag) {
@@ -112,6 +112,7 @@ void c_endpoint_manager::bind_wait_loop() {
 		data.deserialize(serialized);
 		c_endpoint endpoint(e_ipv6_proto_type::eIPv6_UDP, data.port, data.address);
 		std::cout << "bind turbosocket with id " << data.turbosocket_id << " to port " << data.port << std::endl;
+		std::cout << "address " << data.address << std::endl;
 		std::lock_guard<std::mutex> lg(m_maps_mutex);
 		m_udp_socket_map.emplace(std::make_pair(endpoint, m_socket_id_map.at(data.turbosocket_id)));
 	}

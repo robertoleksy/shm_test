@@ -59,8 +59,11 @@ int c_sockfd_manager::bind(int sockfd, const sockaddr *addr, socklen_t addrlen) 
 
 	std::cout << "original bind" << std::endl;
 	int ret = original_bind(sockfd, addr, addrlen);
-	if (ret == -1) return ret;
-
+	if (ret == -1) {
+		std::cout << "original bind error\n";
+		return ret;
+	}
+	std::cout << "finding file descriptor in turbosocket\n";
 	auto it_tcp = m_tcp_descriptors.find(sockfd);
 	auto it_udp = m_udp_descriptors.find(sockfd);
 
@@ -68,15 +71,21 @@ int c_sockfd_manager::bind(int sockfd, const sockaddr *addr, socklen_t addrlen) 
 		using namespace boost::interprocess;
 		bind_data data = generate_bind_data(turbosocket.id(), addr);
 		const std::vector<unsigned char> serialized = data.serialize();
+		std::cout << "create queue\n";
+		std::cout << "serialize size " << serialized.size() << "\n";
 		message_queue bind_queue(open_or_create, "turbosocket_bind_queue", 20, serialized.size()); // sizeof serialized always the same
+		std::cout << "sending via queue\n";
 		bind_queue.send(serialized.data(), serialized.size(), 0);
 	};// lambda
 
-	if (it_tcp != m_tcp_descriptors.end()) {
+	if (it_tcp != m_tcp_descriptors.end()) { // TODO
+		std::cout << "send bind request via tcp queue\n";
 		send_bind_request(it_tcp->second, reinterpret_cast<const struct sockaddr_in6 *>(addr));
 	} else if (it_udp != m_udp_descriptors.end()) {
+		std::cout << "send bind request via udp queue\n";
 		send_bind_request(it_udp->second, reinterpret_cast<const struct sockaddr_in6 *>(addr));
 	}
+	std::cout << "end of fake bind\n";
 	return ret;
 }
 
