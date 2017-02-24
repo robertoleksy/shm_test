@@ -71,6 +71,18 @@ void c_turbosocket::send_to_client(size_t size, const unsigned char dst_address[
 	m_lock_server_to_client.unlock();
 }
 
+void c_turbosocket::received_from_server() {
+	m_header_server_to_client->message_in = false;
+	m_header_server_to_client->cond_full.notify_one();
+	m_lock_server_to_client.unlock();
+}
+
+void c_turbosocket::received_from_client() {
+	m_header_client_to_server->message_in = false;
+	m_header_client_to_server->cond_full.notify_one();
+	m_lock_client_to_server.unlock();
+}
+
 std::tuple<void *, size_t> c_turbosocket::get_buffer_for_write() {
 //	std::cout << "full lock" << std::endl;
 	header * const header_ptr = static_cast<header *>(m_shm_region.get_address());

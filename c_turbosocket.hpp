@@ -22,6 +22,8 @@ class c_turbosocket final {
 		std::tuple<void *, size_t> get_buffer_for_read_from_client(); ///< block until buffer ready
 		void send_to_server(size_t size, const unsigned char dst_address[16], unsigned short dst_port);
 		void send_to_client(size_t size, const unsigned char dst_address[16], unsigned short dst_port);
+		void received_from_server();
+		void received_from_client();
 
 
 		std::tuple<void *, size_t> get_buffer_for_write(); // block until buffer ready
