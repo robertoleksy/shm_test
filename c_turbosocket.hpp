@@ -42,7 +42,7 @@ class c_turbosocket final {
 			//Is there any message
 			bool message_in = false;
 			// socket unique ID
-			uint64_t id;
+			uint64_t id = 0;
 			// size of data
 			size_t data_size;
 
@@ -53,15 +53,28 @@ class c_turbosocket final {
 		};
 
 		uint64_t get_uid() const;
+		[[deprecated]]
 		header *get_heared_ptr() const;
 
 		const std::string m_queue_name = "tunserver_turbosocket_queue";
 		static constexpr size_t m_max_queue_massage_size = 20;
-		// header + packet + mutex
-		const size_t m_shm_size = 65 * 1024 + sizeof(header);
+		const size_t m_shm_size = (65 * 1024 + sizeof(header)) * 2; // max MTU + header for 2 direction
+
+		boost::interprocess::mapped_region m_shm_region_client_to_server; ///< for sending messages from client to server
+		boost::interprocess::mapped_region m_shm_region_server_to_client; ///< for sending messages from server to client
+		header * m_header_client_to_server;
+		header * m_header_server_to_client;
+		void open_or_create_shm(const char *name);
+
+		[[deprecated]]
 		boost::interprocess::mapped_region m_shm_region;
+		[[deprecated]]
 		void * m_shm_data_buff; // ptr to shared memory for free use
+		[[deprecated]]
 		boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> m_lock;
+
+		boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> m_lock_client_to_server;
+		boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> m_lock_server_to_client;
 		uint64_t m_id = 0;
 };
 

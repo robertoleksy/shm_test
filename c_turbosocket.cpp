@@ -73,24 +73,7 @@ void c_turbosocket::connect_as_client() {
 	// open shm
 	std::cout << "open shm" << std::endl;
 	std::cout << "shm name: " << shm_name << std::endl;
-	shared_memory_object shm(create_only, shm_name.data(), read_write);
-	shm.truncate(static_cast<offset_t>(m_shm_size));
-	m_shm_region = mapped_region(shm, read_write);
-
-	std::cout << "alocate header" << std::endl;
-	void * addr = m_shm_region.get_address();
-	header * const header_ptr = new(addr) header;
-	header_ptr->id = get_uid();
-	m_id = header_ptr->id;
-	m_shm_data_buff = static_cast<char *>(addr) + sizeof(header);
-	m_lock = scoped_lock<interprocess_mutex>(header_ptr->mutex, defer_lock_type());
-	std::cout << "created shm address " << addr << std::endl;
-	std::cout << "shm data addr " << m_shm_data_buff << std::endl;
-	std::cout << "header assress " << static_cast<void *>(header_ptr) << std::endl;
-	std::cout << "shm size " << m_shm_region.get_size() << std::endl;
-
-	std::cout << "send shm name " << shm_name << std::endl;
-	std::cout << "size " << shm_name.size() << std::endl;
+	open_or_create_shm(shm_name.c_str());
 	msg_queue.send(shm_name.data(), shm_name.size(), 0); // send string without '\0'
 }
 
@@ -104,16 +87,7 @@ void c_turbosocket::wait_for_connection() {
 	for(auto &c : shm_name)
 		std::cout << c;
 	std::cout << std::endl;
-	shared_memory_object shm(open_only, shm_name.data(), read_write);
-	m_shm_region = mapped_region(shm, read_write);
-	void * addr = m_shm_region.get_address();
-	header * const header_ptr = static_cast<header *>(addr);
-	m_shm_data_buff = static_cast<char *>(addr) + sizeof(header);
-	m_lock = scoped_lock<interprocess_mutex>(header_ptr->mutex, defer_lock_type());
-	m_id = header_ptr->id;
-	std::cout << "created shm address " << addr << std::endl;
-	std::cout << "shm data addr " << m_shm_data_buff << std::endl;
-	std::cout << "shm size " << m_shm_region.get_size() << std::endl;
+	open_or_create_shm(shm_name.data());
 }
 
 bool c_turbosocket::timed_wait_for_connection() { // TODO code duplication
@@ -129,17 +103,7 @@ bool c_turbosocket::timed_wait_for_connection() { // TODO code duplication
 	for(auto &c : shm_name)
 		std::cout << c;
 	std::cout << std::endl;
-	shared_memory_object shm(open_only, shm_name.data(), read_write);
-	m_shm_region = mapped_region(shm, read_write);
-	void * addr = m_shm_region.get_address();
-	header * const header_ptr = static_cast<header *>(addr);
-	m_shm_data_buff = static_cast<char *>(addr) + sizeof(header);
-	m_lock = scoped_lock<interprocess_mutex>(header_ptr->mutex, defer_lock_type());
-	m_id = header_ptr->id;
-	std::cout << "created shm address " << addr << std::endl;
-	std::cout << "shm data addr " << m_shm_data_buff << std::endl;
-	std::cout << "shm size " << m_shm_region.get_size() << std::endl;
-	std::cout << "ID " << m_id << std::endl;
+	open_or_create_shm(shm_name.data());
 	return true;
 }
 
@@ -176,7 +140,7 @@ unsigned short c_turbosocket::get_src_port() const {
 uint64_t c_turbosocket::get_uid() const {
 	std::random_device rd;
 	std::mt19937_64 gen(rd());
-	std::uniform_int_distribution<uint64_t> dis;
+	std::uniform_int_distribution<uint64_t> dis(1); // minimal value == 1
 	return dis(gen);
 }
 
@@ -184,4 +148,29 @@ c_turbosocket::header *c_turbosocket::get_heared_ptr() const {
 	void *addr = m_shm_region.get_address();
 	header * const header_ptr = static_cast<header *>(addr);
 	return header_ptr;
+}
+
+void c_turbosocket::open_or_create_shm(const char *name) {
+	shared_memory_object shm(create_only, name, read_write);
+	shm.truncate(static_cast<offset_t>(m_shm_size));
+	m_shm_region_client_to_server = mapped_region(shm, read_write, 0, m_shm_size / 2); // first half
+	m_shm_region_server_to_client = mapped_region(shm, read_write, m_shm_size / 2, m_shm_size / 2); // second half
+
+	std::cout << "alocate headers" << std::endl;
+	void *addr = m_shm_region_client_to_server.get_address();
+	m_header_client_to_server = new(addr) header;
+	m_lock_client_to_server = scoped_lock<interprocess_mutex>(m_header_client_to_server->mutex, defer_lock_type());
+	// server to client
+	addr = m_shm_region_server_to_client.get_address();
+	m_header_server_to_client = new(addr) header;
+	m_lock_server_to_client = scoped_lock<interprocess_mutex>(m_header_server_to_client->mutex, defer_lock_type());
+
+	if (m_header_client_to_server->id == 0) {
+		std::cout << "create new id\n";
+		m_id = get_uid();
+		m_header_client_to_server->id = m_id;
+		m_header_server_to_client->id = m_id;
+	} else {
+		m_id = m_header_client_to_server->id;
+	}
 }
