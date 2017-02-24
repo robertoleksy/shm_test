@@ -54,6 +54,7 @@ std::tuple<void *, size_t> c_turbosocket::get_buffer_for_read_from_client() {
 }
 
 void c_turbosocket::send_to_server(size_t size, const unsigned char dst_address[16], unsigned short dst_port) {
+	std::cout << "send to server\n";
 	m_header_client_to_server->data_size = size;
 	std::copy(dst_address, dst_address + 16, m_header_client_to_server->ipv6.begin());
 	m_header_client_to_server->port = dst_port;
@@ -63,6 +64,7 @@ void c_turbosocket::send_to_server(size_t size, const unsigned char dst_address[
 }
 
 void c_turbosocket::send_to_client(size_t size, const unsigned char dst_address[16], unsigned short dst_port) {
+	std::cout << "send to client\n";
 	m_header_server_to_client->data_size = size;
 	std::copy(dst_address, dst_address + 16, m_header_server_to_client->ipv6.begin());
 	m_header_server_to_client->port = dst_port;
@@ -72,15 +74,17 @@ void c_turbosocket::send_to_client(size_t size, const unsigned char dst_address[
 }
 
 void c_turbosocket::received_from_server() {
+	std::cout << "received from server\n";
 	m_header_server_to_client->message_in = false;
 	m_header_server_to_client->cond_full.notify_one();
-	m_lock_server_to_client.unlock();
+	m_lock_client_to_server.unlock();
 }
 
 void c_turbosocket::received_from_client() {
+	std::cout << "received from client\n";
 	m_header_client_to_server->message_in = false;
 	m_header_client_to_server->cond_full.notify_one();
-	m_lock_client_to_server.unlock();
+	m_lock_server_to_client.unlock();
 }
 
 std::tuple<void *, size_t> c_turbosocket::get_buffer_for_write() {
@@ -106,6 +110,7 @@ std::tuple<void *, size_t> c_turbosocket::get_buffer_for_read() {
 }
 
 void c_turbosocket::send() {
+	assert(false);
 //	std::cout << "empty unlock" << std::endl;
 	header * const header_ptr = static_cast<header *>(m_shm_region.get_address());
 	header_ptr->message_in = true;
@@ -114,6 +119,7 @@ void c_turbosocket::send() {
 }
 
 void c_turbosocket::send(size_t size, const unsigned char dst_address[16], unsigned short dst_port) {
+	assert(false);
 	header * const header_ptr = static_cast<header *>(m_shm_region.get_address());
 	header_ptr->data_size = size;
 	std::copy(dst_address, dst_address + 16, header_ptr->destination_ipv6.begin());
@@ -122,6 +128,7 @@ void c_turbosocket::send(size_t size, const unsigned char dst_address[16], unsig
 }
 
 void c_turbosocket::received() {
+	assert(false);
 //	std::cout << "full unlock" << std::endl;
 	header * const header_ptr = static_cast<header *>(m_shm_region.get_address());
 	header_ptr->message_in = false;
