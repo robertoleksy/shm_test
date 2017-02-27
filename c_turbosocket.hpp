@@ -83,7 +83,8 @@ class c_turbosocket final {
 		boost::interprocess::mapped_region m_shm_region_server_to_client; ///< for sending messages from server to client
 		header * m_header_client_to_server;
 		header * m_header_server_to_client;
-		void open_or_create_shm(const char *name);
+		void create_shm(const char *name);
+		void open_shm(const char *name);
 
 		[[deprecated]]
 		boost::interprocess::mapped_region m_shm_region;
