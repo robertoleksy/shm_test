@@ -52,9 +52,6 @@ class c_turbosocket final {
 			// size of data
 			size_t data_size;
 
-			std::array<unsigned char, 16> ipv6;
-			unsigned short port;
-
 			std::array<unsigned char, 16> destination_ipv6;
 			std::array<unsigned char, 16> source_ipv6;
 			unsigned short destination_port;

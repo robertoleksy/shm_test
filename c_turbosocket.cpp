@@ -48,8 +48,8 @@ std::tuple<void *, size_t> c_turbosocket::get_buffer_for_read_from_client() {
 void c_turbosocket::send_to_server(size_t size, const unsigned char dst_address[16], unsigned short dst_port) {
 	std::cout << "send to server\n";
 	m_header_client_to_server->data_size = size;
-	std::copy(dst_address, dst_address + 16, m_header_client_to_server->ipv6.begin());
-	m_header_client_to_server->port = dst_port;
+	std::copy(dst_address, dst_address + 16, m_header_client_to_server->destination_ipv6.begin());
+	m_header_client_to_server->destination_port = dst_port;
 	m_header_client_to_server->message_in = true;
 	m_header_client_to_server->cond_empty.notify_one();
 	m_lock_client_to_server.unlock();
@@ -58,8 +58,8 @@ void c_turbosocket::send_to_server(size_t size, const unsigned char dst_address[
 void c_turbosocket::send_to_client(size_t size, const unsigned char dst_address[16], unsigned short dst_port) {
 	std::cout << "send to client\n";
 	m_header_server_to_client->data_size = size;
-	std::copy(dst_address, dst_address + 16, m_header_server_to_client->ipv6.begin());
-	m_header_server_to_client->port = dst_port;
+	std::copy(dst_address, dst_address + 16, m_header_server_to_client->destination_ipv6.begin());
+	m_header_server_to_client->destination_port = dst_port;
 	m_header_server_to_client->message_in = true;
 	m_header_server_to_client->cond_empty.notify_one();
 	m_lock_server_to_client.unlock();
@@ -141,11 +141,11 @@ uint64_t c_turbosocket::id() const {
 }
 
 const std::array<unsigned char, 16> &c_turbosocket::get_srv_ipv6() const {
-	return m_header_client_to_server->ipv6;
+	return m_header_client_to_server->destination_ipv6;
 }
 
 const std::array<unsigned char, 16> &c_turbosocket::get_cli_ipv6() const {
-	return m_header_server_to_client->ipv6;
+	return m_header_server_to_client->destination_ipv6;
 }
 
 unsigned short c_turbosocket::get_srv_port() const {

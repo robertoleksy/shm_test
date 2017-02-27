@@ -58,7 +58,7 @@ int c_sockfd_manager::bind(int sockfd, const sockaddr *addr, socklen_t addrlen) 
 	original_bind = reinterpret_cast<decltype(original_bind)>(dlsym(RTLD_NEXT, "bind"));
 
 	std::cout << "original bind" << std::endl;
-	int ret = original_bind(sockfd, addr, addrlen);
+	int ret = 0; // XXX original_bind(sockfd, addr, addrlen);
 	if (ret == -1) {
 		std::cout << "original bind error\n";
 		return ret;
@@ -70,6 +70,7 @@ int c_sockfd_manager::bind(int sockfd, const sockaddr *addr, socklen_t addrlen) 
 	auto send_bind_request = [this](c_turbosocket &turbosocket, const struct sockaddr_in6 *addr) {
 		using namespace boost::interprocess;
 		bind_data data = generate_bind_data(turbosocket.id(), addr);
+		std::cout << "generated bind data: " << data.address << " port " << data.port << std::endl;
 		std::cout << "create queue\n";
 		message_queue bind_queue(open_or_create, "turbosocket_bind_queue", 20, 16);
 		std::cout << "sending via queue\n";
@@ -93,6 +94,8 @@ int c_sockfd_manager::bind(int sockfd, const sockaddr *addr, socklen_t addrlen) 
 	} else if (it_udp != m_udp_descriptors.end()) {
 		std::cout << "send bind request via udp queue\n";
 		send_bind_request(it_udp->second, reinterpret_cast<const struct sockaddr_in6 *>(addr));
+	} else {
+		std::cout << "not found descriptor " << sockfd << '\n';
 	}
 	std::cout << "end of fake bind\n";
 	return ret;

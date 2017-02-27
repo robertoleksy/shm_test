@@ -18,6 +18,9 @@ class c_endpoint final {
 	public:
 		c_endpoint(e_ipv6_proto_type proto, unsigned short port, const boost::asio::ip::address_v6 &address);
 		bool operator < (const c_endpoint &rhs) const;
+		bool operator == (const c_endpoint &rhs) const;
+		boost::asio::ip::address_v6::bytes_type get_ip_as_bytes();
+		unsigned short get_port();
 	private:
 		e_ipv6_proto_type m_proto;
 		unsigned short m_port;
@@ -37,6 +40,21 @@ bool c_endpoint::operator < (const c_endpoint &rhs) const {
 	if (this->m_port < rhs.m_port) return true;
 	if (this->m_address < rhs.m_address) return true;
 	return false;
+}
+
+bool c_endpoint::operator ==(const c_endpoint &rhs) const {
+	if (m_address != rhs.m_address) return false;
+	if (m_port != rhs.m_port) return false;
+	if (m_proto != rhs.m_proto) return false;
+	return true;
+}
+
+boost::asio::ip::address_v6::bytes_type c_endpoint::get_ip_as_bytes() {
+	return m_address.to_bytes();
+}
+
+unsigned short c_endpoint::get_port() {
+	return m_port;
 }
 
 /********************************************************************************/
@@ -135,27 +153,41 @@ void c_endpoint_manager::foreach_read(F &&handler) {
 	for (auto & element : m_socket_id_map) {
 		std::shared_ptr<c_turbosocket> turbosocket(element.second);
 		if (turbosocket->server_data_ready_for_read()) {
-			void * buf = nullptr;
-			size_t buf_size = 0;
-			std::tie<void *, size_t>(buf, buf_size) = turbosocket->get_buffer_for_read_from_client();
+			void * buf_from_client = nullptr;
+			size_t buf_from_client_size = 0;
+			std::tie<void *, size_t>(buf_from_client, buf_from_client_size) = turbosocket->get_buffer_for_read_from_client();
 			boost::asio::ip::address_v6::bytes_type ipv6_bytes;
 			std::copy(turbosocket->get_srv_ipv6().begin(), turbosocket->get_srv_ipv6().end(), ipv6_bytes.begin());
 			boost::asio::ip::address_v6 ipv6(ipv6_bytes);
-			unsigned short port = turbosocket->get_srv_port();
+			unsigned short port = ntohs(turbosocket->get_srv_port());
 			std::cout << "readed data, destination:\n";
 			std::cout << "ip " << ipv6 << "\n";
-			std::cout << "port " << ntohs(port) << std::endl;
-			handler(buf, buf_size);
+			std::cout << "port " << port << std::endl;
+			handler(buf_from_client, buf_from_client_size);
 			turbosocket->received_from_client(); // end of receive
 
-			// send response
+			c_endpoint packet_endpoint(e_ipv6_proto_type::eIPv6_UDP, port, ipv6);
+			std::cout << "find binded socket to address " << ipv6 << " on port " << port << "\n";
+			auto it = m_udp_socket_map.find(packet_endpoint);
+			if (it != m_udp_socket_map.end()) {
+				std::cout << "found destination in m_udp_socket_map map\n";
+				void *buffer_to_client = nullptr;
+				size_t buffer_to_client_size = 0;
+				std::tie<void *, size_t>(buffer_to_client, buffer_to_client_size) = it->second->get_buffer_for_write_to_client();
+				std::memcpy(buffer_to_client, buf_from_client, buf_from_client_size);
+				it->second->send_to_client(buf_from_client_size, packet_endpoint.get_ip_as_bytes().data(), packet_endpoint.get_port());
+			} else {
+				std::cout << "not found destination in m_udp_socket_map map, ignore\n";
+			}
+
+/*			// send response
 			std::cout << "send response\n";
 			std::string response = "response";
-			std::tie<void *, size_t>(buf, buf_size) = turbosocket->get_buffer_for_write_to_client();
-			response.copy(static_cast<char *>(buf), response.size());
+			std::tie<void *, size_t>(buf_from_client, buf_from_client_size) = turbosocket->get_buffer_for_write_to_client();
+			response.copy(static_cast<char *>(buf_from_client), response.size());
 			std::array<unsigned char, 16> ip;
 			ip.fill(0xAB);
-			turbosocket->send_to_client(response.size() + 1, ip.data(), 4321); // size + 1 for \0
+			turbosocket->send_to_client(response.size() + 1, ip.data(), 4321); // size + 1 for \0*/
 		}
 	}
 }
