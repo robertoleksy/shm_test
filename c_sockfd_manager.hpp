@@ -11,8 +11,6 @@ struct bind_data {
 	uint64_t turbosocket_id;
 	boost::asio::ip::address_v6 address;
 	unsigned short port;
-	std::vector<unsigned char> serialize();
-	void deserialize(std::vector<unsigned char> buf);
 };
 
 class c_sockfd_manager {

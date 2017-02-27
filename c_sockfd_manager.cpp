@@ -70,12 +70,21 @@ int c_sockfd_manager::bind(int sockfd, const sockaddr *addr, socklen_t addrlen) 
 	auto send_bind_request = [this](c_turbosocket &turbosocket, const struct sockaddr_in6 *addr) {
 		using namespace boost::interprocess;
 		bind_data data = generate_bind_data(turbosocket.id(), addr);
-		const std::vector<unsigned char> serialized = data.serialize();
 		std::cout << "create queue\n";
-		std::cout << "serialize size " << serialized.size() << "\n";
-		message_queue bind_queue(open_or_create, "turbosocket_bind_queue", 20, serialized.size()); // sizeof serialized always the same
+		message_queue bind_queue(open_or_create, "turbosocket_bind_queue", 20, 16);
 		std::cout << "sending via queue\n";
-		bind_queue.send(serialized.data(), serialized.size(), 0);
+		auto ip_as_bytes = data.address.to_bytes();
+		std::cout << "send address " << data.address << "\n";
+		bind_queue.send(ip_as_bytes.data(), ip_as_bytes.size(), 0);
+		std::cout << "send port " << data.port << "\n";
+		bind_queue.send(&data.port, sizeof(data.port), 0);
+		std::cout << "send tubbosocket id " << data.turbosocket_id << "\n";
+		bind_queue.send(&data.turbosocket_id, sizeof(data.turbosocket_id), 0);
+		std::cout << "end of send\n";
+		std::cout << "sended data\n";
+		std::cout << "bind ip " << data.address << "\n";
+		std::cout << "port " << data.port << "\n";
+		std::cout << "turbosocket id " << data.turbosocket_id << "\n";
 	};// lambda
 
 	if (it_tcp != m_tcp_descriptors.end()) { // TODO
@@ -97,34 +106,4 @@ bind_data c_sockfd_manager::generate_bind_data(uint64_t turbosocket_id, const so
 	inet_ntop(AF_INET6, &(addr->sin6_addr), addr_str, INET6_ADDRSTRLEN);
 	ret.address.from_string(addr_str);
 	return ret;
-}
-
-std::vector<unsigned char> bind_data::serialize() {
-	std::vector<unsigned char> ret;
-	for (int i = sizeof(turbosocket_id) - 1; i >=0; i--) {
-		unsigned char byte = static_cast<unsigned char>(turbosocket_id >> i);
-		ret.push_back(byte);
-	}
-	ret.push_back(port & 0xFF);
-	ret.push_back(port >> 8);
-	boost::asio::ip::address_v6::bytes_type ip_as_bytes = address.to_bytes();
-	for (const auto & byte : ip_as_bytes)
-		ret.emplace_back(byte);
-	return ret;
-}
-
-void bind_data::deserialize(std::vector<unsigned char> buf) {
-	turbosocket_id = 0;
-	for (size_t i = 0; i < sizeof(turbosocket_id); i++) {
-		turbosocket_id += static_cast<unsigned char>((buf.at(i) << (i * 8)));
-	}
-	port = buf.at(4);
-	port += buf.at(5) << 8;
-	boost::asio::ip::address_v6::bytes_type ip_bytes;
-	auto it = (buf.begin() + 6);
-	for (size_t i = 0; i < ip_bytes.size(); i++) {
-		ip_bytes.at(i) = *it;
-		++it;
-	}
-	address = boost::asio::ip::address_v6(ip_bytes);
 }

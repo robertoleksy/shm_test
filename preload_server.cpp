@@ -89,27 +89,36 @@ void c_endpoint_manager::connection_wait_loop() {
 		uint64_t id = turbosocket.id();
 		assert(id != 0);
 		std::lock_guard<std::mutex> lg(m_maps_mutex);
-		std::cout << "emplace turbosocket into m_socket_id_map\n";
+		std::cout << "emplace turbosocket with id " << id << " into m_socket_id_map\n";
 		m_socket_id_map.emplace(std::make_pair(id, std::make_shared<c_turbosocket>(std::move(turbosocket))));
 	}
 }
 
 void c_endpoint_manager::bind_wait_loop() {
 	using namespace boost::interprocess;
-	const size_t size_of_serialized_data = 26; // TODO magic number
-	std::vector<unsigned char> serialized(size_of_serialized_data);
-	message_queue bind_queue(open_or_create, "turbosocket_bind_queue", 20, serialized.size()); // sizeof serialized always the same
+	message_queue bind_queue(open_or_create, "turbosocket_bind_queue", 20, 16);
 	while (!m_stop_flag) {
 		bind_data data;
 		size_t recv_size = 0;
 		unsigned int priority = 0;
-		bool received_data = bind_queue.try_receive(serialized.data(), serialized.size(), recv_size, priority);
-		if (!received_data) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(500));
-			continue;
-		}
-		assert(recv_size == size_of_serialized_data);
-		data.deserialize(serialized);
+		std::array<unsigned int, 16> input_buffer;
+		boost::asio::ip::address_v6::bytes_type ip_as_bytes;
+		std::cout << "receive ip address\n";
+		bind_queue.receive(ip_as_bytes.data(), ip_as_bytes.size(), recv_size, priority);
+		std::cout << "received " << recv_size << std::endl;
+		std::cout << "receive port\n";
+		bind_queue.receive(input_buffer.data(), input_buffer.size(), recv_size, priority);
+		std::memcpy(&data.port, input_buffer.data(), sizeof(data.port));
+		std::cout << "received " << recv_size << "\n";
+		std::cout << "receive turbosocket id\n";
+		bind_queue.receive(input_buffer.data(), input_buffer.size(), recv_size, priority);
+		std::memcpy(&data.turbosocket_id, input_buffer.data(), sizeof(data.turbosocket_id));
+		std::cout << "received " << recv_size << std::endl;
+		std::cout << "end of bind receive" << std::endl;
+		std::cout << "bind ip " << data.address << "\n";
+		std::cout << "port " << data.port << "\n";
+		std::cout << "turbosocket id " << data.turbosocket_id << "\n";
+		data.address = boost::asio::ip::address_v6(ip_as_bytes);
 		c_endpoint endpoint(e_ipv6_proto_type::eIPv6_UDP, data.port, data.address);
 		std::cout << "bind turbosocket with id " << data.turbosocket_id << " to port " << data.port << std::endl;
 		std::cout << "address " << data.address << std::endl;
