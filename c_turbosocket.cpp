@@ -79,57 +79,6 @@ void c_turbosocket::received_from_client() {
 	m_lock_server_to_client.unlock();
 }
 
-std::tuple<void *, size_t> c_turbosocket::get_buffer_for_write() {
-	assert(false);
-//	std::cout << "full lock" << std::endl;
-	header * const header_ptr = static_cast<header *>(m_shm_region.get_address());
-	m_lock.lock();
-	if (header_ptr->message_in)
-		header_ptr->cond_full.wait(m_lock);
-
-	return std::make_tuple(m_shm_data_buff, m_shm_size - sizeof(header));
-}
-
-std::tuple<void *, size_t> c_turbosocket::get_buffer_for_read() {
-	assert(false);
-//	std::cout << "empty lock" << std::endl;
-	header * const header_ptr = static_cast<header *>(m_shm_region.get_address());
-	m_lock.lock();
-	if (!header_ptr->message_in)
-		header_ptr->cond_empty.wait(m_lock);
-	if (header_ptr->data_size == 0)
-		return std::make_tuple(m_shm_data_buff, m_shm_size - sizeof(header));
-	else
-		return std::make_tuple(m_shm_data_buff, header_ptr->data_size);
-}
-
-void c_turbosocket::send() {
-	assert(false);
-//	std::cout << "empty unlock" << std::endl;
-	header * const header_ptr = static_cast<header *>(m_shm_region.get_address());
-	header_ptr->message_in = true;
-	header_ptr->cond_empty.notify_one();
-	m_lock.unlock();
-}
-
-void c_turbosocket::send(size_t size, const unsigned char dst_address[16], unsigned short dst_port) {
-	assert(false);
-	header * const header_ptr = static_cast<header *>(m_shm_region.get_address());
-	header_ptr->data_size = size;
-	std::copy(dst_address, dst_address + 16, header_ptr->destination_ipv6.begin());
-	header_ptr->destination_port = dst_port;
-	send();
-}
-
-void c_turbosocket::received() {
-	assert(false);
-//	std::cout << "full unlock" << std::endl;
-	header * const header_ptr = static_cast<header *>(m_shm_region.get_address());
-	header_ptr->message_in = false;
-	header_ptr->cond_full.notify_one();
-	m_lock.unlock();
-}
-
 void c_turbosocket::connect_as_client() {
 	message_queue msg_queue(open_or_create, m_queue_name.c_str(), 20, m_max_queue_massage_size);
 	const std::string shm_name = [this]() {
@@ -179,17 +128,6 @@ bool c_turbosocket::timed_wait_for_connection() { // TODO code duplication
 	return true;
 }
 
-bool c_turbosocket::ready_for_read() {
-	assert(false);
-	bool lock = m_lock.try_lock();
-	if (!lock) return false;
-	void * addr = m_shm_region.get_address();
-	header * const header_ptr = static_cast<header *>(addr);
-	bool ret = header_ptr->message_in;
-	m_lock.unlock();
-	return ret;
-}
-
 bool c_turbosocket::server_data_ready_for_read() {
 	bool lock = m_lock_client_to_server.try_lock();
 	if (!lock) return false;
@@ -224,12 +162,6 @@ uint64_t c_turbosocket::get_uid() const {
 	std::uniform_int_distribution<uint64_t> dis(1); // minimal value == 1
 	std::cout << "generate new turbosocket id\n";
 	return dis(gen);
-}
-
-c_turbosocket::header *c_turbosocket::get_heared_ptr() const {
-	void *addr = m_shm_region.get_address();
-	header * const header_ptr = static_cast<header *>(addr);
-	return header_ptr;
 }
 
 void c_turbosocket::create_shm(const char *name) {

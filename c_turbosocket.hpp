@@ -15,7 +15,6 @@ class c_turbosocket final {
 		c_turbosocket(c_turbosocket && other) = default;
 		c_turbosocket(const c_turbosocket &) = delete;
 
-
 		std::tuple<void *, size_t> get_buffer_for_write_to_server(); ///< block until buffer ready
 		std::tuple<void *, size_t> get_buffer_for_write_to_client(); ///< block until buffer ready
 		std::tuple<void *, size_t> get_buffer_for_read_from_server(); ///< block until buffer ready
@@ -25,13 +24,6 @@ class c_turbosocket final {
 		void received_from_server();
 		void received_from_client();
 
-
-		std::tuple<void *, size_t> get_buffer_for_write(); // block until buffer ready
-		std::tuple<void *, size_t> get_buffer_for_read(); // block until buffer ready
-
-		void send(); //< send data writed to buffer get by get_buffer
-		void send(size_t size, const unsigned char dst_address[16], unsigned short dst_port); ///< send and mark size of sended data
-		void received(); //< receive data writed to buffer get by get_buffer
 		void connect_as_client();
 		void wait_for_connection(); // block function
 		bool timed_wait_for_connection(); ///< wait with timeout, return true if connected
@@ -40,7 +32,6 @@ class c_turbosocket final {
 		 * check if data is ready for read, if return true get_buffer_for_read() returns immediately
 		 * not blocks
 		 */
-		bool ready_for_read();
 		bool server_data_ready_for_read();
 		uint64_t id() const;
 		const std::array<unsigned char, 16> &get_srv_ipv6() const; ///< returns destination address from server header
@@ -71,8 +62,6 @@ class c_turbosocket final {
 		};
 
 		uint64_t get_uid() const;
-		[[deprecated]]
-		header *get_heared_ptr() const;
 
 		const std::string m_queue_name = "tunserver_turbosocket_queue";
 		static constexpr size_t m_max_queue_massage_size = 20;
@@ -85,13 +74,6 @@ class c_turbosocket final {
 		header * m_header_server_to_client;
 		void create_shm(const char *name);
 		void open_shm(const char *name);
-
-		[[deprecated]]
-		boost::interprocess::mapped_region m_shm_region;
-		[[deprecated]]
-		void * m_shm_data_buff; // ptr to shared memory for free use
-		[[deprecated]]
-		boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> m_lock;
 
 		boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> m_lock_client_to_server;
 		boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> m_lock_server_to_client;
