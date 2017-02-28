@@ -107,6 +107,11 @@ bind_data c_sockfd_manager::generate_bind_data(uint64_t turbosocket_id, const so
 	ret.port = htons(addr->sin6_port);
 	char addr_str[INET6_ADDRSTRLEN];
 	inet_ntop(AF_INET6, &(addr->sin6_addr), addr_str, INET6_ADDRSTRLEN);
-	ret.address.from_string(addr_str);
+	std::cout << "generate bind data address " << addr_str << "\n";
+	//ret.address.from_string(addr_str);
+	boost::asio::ip::address_v6::bytes_type ip_bytes;
+	std::copy(&(addr->sin6_addr.s6_addr[0]), &(addr->sin6_addr.s6_addr[16]), ip_bytes.begin());
+	ret.address = boost::asio::ip::address_v6(ip_bytes);
+	std::cout << "generated addres as asio object " << ret.address << "\n";
 	return ret;
 }
