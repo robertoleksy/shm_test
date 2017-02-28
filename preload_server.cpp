@@ -101,8 +101,9 @@ c_endpoint_manager::~c_endpoint_manager() {
 void c_endpoint_manager::connection_wait_loop() {
 	while (!m_stop_flag) {
 		c_turbosocket turbosocket;
-		bool new_connection = turbosocket.timed_wait_for_connection();
-		if (!new_connection) continue;
+//		bool new_connection = turbosocket.timed_wait_for_connection();
+//		if (!new_connection) continue;
+		turbosocket.wait_for_connection();
 		std::cout << "new connsetion\n";
 		uint64_t id = turbosocket.id();
 		assert(id != 0);
@@ -140,7 +141,13 @@ void c_endpoint_manager::bind_wait_loop() {
 		c_endpoint endpoint(e_ipv6_proto_type::eIPv6_UDP, data.port, data.address);
 		std::cout << "bind turbosocket with id " << data.turbosocket_id << " to port " << data.port << std::endl;
 		std::cout << "address " << data.address << std::endl;
-		std::lock_guard<std::mutex> lg(m_maps_mutex);
+		std::unique_lock<std::mutex> lg(m_maps_mutex);
+		while (m_socket_id_map.find(data.turbosocket_id) == m_socket_id_map.end()) {
+			lg.unlock();
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			lg.lock();
+		}
+		std::cout << "add to m_socket_id_map\n";
 		m_udp_socket_map.emplace(std::make_pair(endpoint, m_socket_id_map.at(data.turbosocket_id)));
 	}
 }
@@ -208,7 +215,7 @@ int main() {
 				std::cout << str[i];
 			std::cout << "end of foreach lambda loop" << std::endl;
 		});
-		std::this_thread::sleep_for(std::chrono::seconds(3));
+		std::this_thread::sleep_for(std::chrono::seconds(0));
 	}
 }
 
