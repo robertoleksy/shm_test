@@ -11,6 +11,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wall -pedantic -std=c++14 -g3 -
 #target_link_libraries(msg_queue_client pthread rt)
 #target_link_libraries(msg_queue_server pthread rt)
 
+add_executable(server_udp server_udp.cpp)
+add_executable(client_udp client_udp.cpp)
+
 add_library(preload SHARED preload.cpp c_turbosocket.cpp c_sockfd_manager.cpp)
 target_link_libraries(preload boost_system dl pthread rt)
 
