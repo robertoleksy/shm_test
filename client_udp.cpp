@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
 */
  /* now send a datagram */
 while (true) {
-  if (sendto(sock, buffer, sizeof(buffer), 0,
+  if (sendto(sock, buffer, packet_size, 0,
              (struct sockaddr *)&server_addr,
 	     sizeof(server_addr)) < 0) {
       perror("sendto failed");
