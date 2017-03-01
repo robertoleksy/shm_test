@@ -182,6 +182,7 @@ void c_endpoint_manager::foreach_read(F &&handler) {
 				size_t buffer_to_client_size = 0;
 				std::tie<void *, size_t>(buffer_to_client, buffer_to_client_size) = it->second->get_buffer_for_write_to_client();
 				std::memcpy(buffer_to_client, buf_from_client, buf_from_client_size);
+				std::cout << "send to client " << buf_from_client_size << " bytes\n";
 				it->second->send_to_client(buf_from_client_size, packet_endpoint.get_ip_as_bytes().data(), packet_endpoint.get_port());
 			} else {
 				std::cout << "not found destination in m_udp_socket_map map, ignore\n";
@@ -215,7 +216,7 @@ int main() {
 				std::cout << str[i];
 			std::cout << "end of foreach lambda loop" << std::endl;
 		});
-		std::this_thread::sleep_for(std::chrono::seconds(0));
+		std::this_thread::sleep_for(std::chrono::seconds(2));
 	}
 }
 

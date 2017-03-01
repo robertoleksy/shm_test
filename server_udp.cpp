@@ -139,6 +139,7 @@ while (true) {
       perror("recvfrom failed");
       exit(4);
   }
+//   std::cout << "recv " << recv_size << " bytes\n";
 	counter.add_data_size(recv_size);
 	auto now = std::chrono::steady_clock::now();
 	if (std::chrono::duration_cast<std::chrono::seconds>(now - last_dbg_time).count() > 10) {

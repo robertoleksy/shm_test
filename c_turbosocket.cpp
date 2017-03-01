@@ -8,6 +8,7 @@
 using namespace boost::interprocess;
 
 std::tuple<void *, size_t> c_turbosocket::get_buffer_for_write_to_server() {
+//	std::cout << "get buffer for write to server\n";
 	m_lock_client_to_server.lock();
 	if (m_header_client_to_server->message_in)
 		m_header_client_to_server->cond_full.wait(m_lock_client_to_server);
@@ -15,6 +16,7 @@ std::tuple<void *, size_t> c_turbosocket::get_buffer_for_write_to_server() {
 }
 
 std::tuple<void *, size_t> c_turbosocket::get_buffer_for_write_to_client() {
+//	std::cout << "get buffer for write to client\n";
 	m_lock_server_to_client.lock();
 	if (m_header_server_to_client->message_in)
 		m_header_server_to_client->cond_full.wait(m_lock_server_to_client);
@@ -22,18 +24,20 @@ std::tuple<void *, size_t> c_turbosocket::get_buffer_for_write_to_client() {
 }
 
 std::tuple<void *, size_t> c_turbosocket::get_buffer_for_read_from_server() {
+//	std::cout << "get buffer for read from server\n";
 	m_lock_server_to_client.lock();
 	if (!m_header_server_to_client->message_in)
 		m_header_server_to_client->cond_empty.wait(m_lock_server_to_client);
 	void *data_ptr = static_cast<char *>(m_shm_region_server_to_client.get_address()) + sizeof(header);
-	if (m_header_server_to_client->data_size == 0)
+/*	if (m_header_server_to_client->data_size == 0)
 		return std::make_tuple(data_ptr, m_size_of_single_buffer);
-	else
+	else*/
 		return std::make_tuple(data_ptr, m_header_server_to_client->data_size);
 }
 
 std::tuple<void *, size_t> c_turbosocket::get_buffer_for_read_from_client() {
-	m_lock_server_to_client.lock();
+//	std::cout << "get buffer for read from client\n";
+	m_lock_client_to_server.lock();
 	if (!m_header_client_to_server->message_in)
 		m_header_client_to_server->cond_empty.wait(m_lock_client_to_server);
 
@@ -46,7 +50,7 @@ std::tuple<void *, size_t> c_turbosocket::get_buffer_for_read_from_client() {
 }
 
 void c_turbosocket::send_to_server(size_t size, const unsigned char dst_address[16], unsigned short dst_port) {
-///std::coutut << "send to server\n";
+//	std::cout << "send to server\n";
 	m_header_client_to_server->data_size = size;
 	std::copy(dst_address, dst_address + 16, m_header_client_to_server->destination_ipv6.begin());
 	m_header_client_to_server->destination_port = dst_port;
@@ -56,7 +60,7 @@ void c_turbosocket::send_to_server(size_t size, const unsigned char dst_address[
 }
 
 void c_turbosocket::send_to_client(size_t size, const unsigned char dst_address[16], unsigned short dst_port) {
-///std::coutut << "send to client\n";
+//	std::cout << "send to client\n";
 	m_header_server_to_client->data_size = size;
 	std::copy(dst_address, dst_address + 16, m_header_server_to_client->destination_ipv6.begin());
 	m_header_server_to_client->destination_port = dst_port;
@@ -66,17 +70,19 @@ void c_turbosocket::send_to_client(size_t size, const unsigned char dst_address[
 }
 
 void c_turbosocket::received_from_server() {
-///std::coutut << "received from server\n";
+//	std::cout << "received from server\n";
 	m_header_server_to_client->message_in = false;
 	m_header_server_to_client->cond_full.notify_one();
-	m_lock_client_to_server.unlock();
+//	m_lock_client_to_server.unlock();
+	m_lock_server_to_client.unlock();
 }
 
 void c_turbosocket::received_from_client() {
-///std::coutut << "received from client\n";
+//	std::cout << "received from client\n";
 	m_header_client_to_server->message_in = false;
 	m_header_client_to_server->cond_full.notify_one();
-	m_lock_server_to_client.unlock();
+//	m_lock_server_to_client.unlock();
+	m_lock_client_to_server.unlock();
 }
 
 void c_turbosocket::connect_as_client() {
